@@ -46,7 +46,7 @@ class Validator {
    * @param  {String}  _dir - optional, path must be absolute
    * @return {Promise}
    */
-  init(_dir) {
+  init = (_dir) => {
     const dir = _dir || this.schemaDir;
 
     return fs.readdirAsync(dir)
@@ -74,7 +74,7 @@ class Validator {
    * @param  {Mixed}  data
    * @return {Promise}
    */
-  validate(route, data) {
+  validate = (route, data) => {
     const validate = this.validators[route];
 
     if (!validate) {

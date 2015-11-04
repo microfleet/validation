@@ -1,10 +1,10 @@
 {
   "name": "ms-amqp-validation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "validation middleware for amqp transport layer",
   "main": "./lib/index.js",
   "scripts": {
-    "prepublish": "babel ./src -d ./lib --source-maps inline --optional es7.objectRestSpread,es7.classProperties,es7.decorators",
+    "prepublish": "babel ./src -d ./lib --optional es7.objectRestSpread,es7.classProperties,es7.decorators",
     "test": "npm rebuild && BLUEBIRD_DEBUG=1 ./node_modules/.bin/mocha --require ./test/babelhook.js --bail --timeout 10000 -R xunit > test-report-$(node -v).xml"
   },
   "repository": {
