@@ -23,20 +23,22 @@ const Errors = require('common-errors');
 const Validator = require('ms-amqp-validation');
 const validator = new Validator(path.resolve(__dirname, './schemas'));
 
-validator.init().then(() => {
-
-  // some logic here
-
-  validator.validate('config', {
-    configuration: 'string'
-  })
-  .then(() => {
-    // all good
-  })
-  .catch(Errors.ValidationError, (error) => {
-    // handle error here
-  });
-
+// some logic here
+validator.validate('config', {
+  configuration: 'string'
+})
+.then(() => {
+  // all good
+})
+.catch(Errors.ValidationError, (error) => {
+  // handle error here
 });
 
+const err = validator.validateSync('config', { data: true });
+if (err) {
+  // handle error!
+}
+
+// do stuff
+// ...
 ```

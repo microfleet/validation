@@ -1,7 +1,7 @@
 const Promise = require('bluebird');
 const validator = require('is-my-json-valid');
 const path = require('path');
-const fs = Promise.promisifyAll(require('fs'));
+const fs = require('fs');
 const Errors = require('common-errors');
 
 /**
@@ -13,6 +13,9 @@ function json(filename) {
   return path.extname(filename) === '.json';
 }
 
+/**
+ * @namespace Validator
+ */
 class Validator {
 
   /**
@@ -36,9 +39,16 @@ class Validator {
     this.schemaOptions = schemaOptions;
     this.filter = filter;
     this.validators = {};
+
+    // automatically init if we have schema dir
+    if (schemaDir) {
+      this.init();
+    }
   }
 
   /**
+   * #init()
+   *
    * Init function - loads schemas from config dir
    * Can call multiple times to load multiple dirs, though one must make sure
    * that files are named differently, otherwise validators will be overwritten
@@ -46,53 +56,91 @@ class Validator {
    * @param  {String}  _dir - optional, path must be absolute
    * @return {Promise}
    */
-  init = (_dir) => {
+  init = (_dir, async = false) => {
     const dir = _dir || this.schemaDir;
 
-    return fs.readdirAsync(dir)
-      .catch((err) => {
-        throw new Errors.io.IOError(`was unable to read ${dir}`, err);
-      })
-      .filter(this.filter)
-      .then((filenames) => {
-        if (filenames.length === 0) {
-          throw new Errors.io.FileNotFoundError(`no schemas found in dir '${dir}'`);
-        }
+    let list;
+    try {
+      list = fs.readdirSync(dir);
+    } catch (err) {
+      const error = new Errors.io.IOError(`was unable to read ${dir}`, err);
 
-        return filenames;
-      })
-      .map((filename) => {
-        const schema = require(path.resolve(dir, filename));
-        this.validators[path.basename(filename, '.json')] = validator(schema, this.schemaOptions);
-      });
+      if (async) {
+        return Promise.reject(error);
+      }
+
+      throw error;
+    }
+
+    const filenames = list.filter(this.filter);
+    if (filenames.length === 0) {
+      const error = new Errors.io.FileNotFoundError(`no schemas found in dir '${dir}'`);
+      if (async) {
+        return Promise.reject(error);
+      }
+
+      throw error;
+    }
+
+    filenames.forEach((filename) => {
+      const schema = require(path.resolve(dir, filename));
+      this.validators[path.basename(filename, '.json')] = validator(schema, this.schemaOptions);
+    });
   }
 
   /**
-   * Validates data via a `route`, which equals to schema name in the
-   * passed dir
-   * @param  {String} route
+   * @private
+   *
+   * Internal validation function
+   * @param  {String} schema - schema name
    * @param  {Mixed}  data
-   * @return {Promise}
+   * @return {Error|Undefined}
    */
-  validate = (route, data) => {
-    const validate = this.validators[route];
+  _validate(schema, data) {
+    const validate = this.validators[schema];
 
     if (!validate) {
-      return Promise.reject(new Errors.NotFoundError(`validator ${route} not found`));
+      return new Errors.NotFoundError(`validator "${schema}" not found`);
     }
 
     validate(data);
 
     if (validate.errors) {
-      const error = new Errors.ValidationError(`route "${route}" validation failed`, 400);
+      const error = new Errors.ValidationError(`route "${schema}" validation failed`, 400);
       validate.errors.forEach((err) => {
         error.addError(new Errors.ValidationError(err.message, 400, err.field));
       });
 
-      return Promise.reject(error);
+      return error;
+    }
+
+    return undefined;
+  }
+
+  /**
+   * Validates data via a `schema`, which equals to schema name in the
+   * passed dir
+   * @param  {String} schema
+   * @param  {Mixed}  data
+   * @return {Promise}
+   */
+  validate = (schema, data) => {
+    const err = this._validate(schema, data);
+    if (err) {
+      return Promise.reject(err);
     }
 
     return Promise.resolve();
+  }
+
+  /**
+   * Synchronously validates and returns either an Error object or `void 0`
+   * @param  {String} schema
+   * @param  {Mixed}  data
+   * @return {Error|Undefined}
+   */
+  validateSync = (schema, data) => {
+    return this._validate(schema, data);
   }
 
 }

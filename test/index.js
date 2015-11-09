@@ -16,7 +16,7 @@ describe('Validation', function validationSuite() {
   });
 
   it('should reject promise with an IO Error on invalid dir', () => {
-    return this.validator.init(BAD_PATH)
+    return this.validator.init(BAD_PATH, true)
       .then(() => {
         throw new Error('should not initialize');
       })
@@ -24,7 +24,7 @@ describe('Validation', function validationSuite() {
   });
 
   it('should reject promise with a file not found error on an empty dir', () => {
-    return this.validator.init(EMPTY_PATH)
+    return this.validator.init(EMPTY_PATH, true)
       .then(() => {
         throw new Error('should not initialize');
       })
@@ -32,10 +32,8 @@ describe('Validation', function validationSuite() {
   });
 
   it('should reject promise with a NotFoundError on a non-existant validator', () => {
-    return this.validator.init(CORRECT_PATH)
-      .then(() => {
-        return this.validator.validate('bad-route', {});
-      })
+    this.validator.init(CORRECT_PATH);
+    return this.validator.validate('bad-route', {})
       .then(() => {
         throw new Error('should not initialize');
       })
@@ -43,17 +41,13 @@ describe('Validation', function validationSuite() {
   });
 
   it('should validate a correct object', () => {
-    return this.validator.init(CORRECT_PATH)
-      .then(() => {
-        return this.validator.validate('custom', { string: 'not empty' });
-      });
+    this.validator.init(CORRECT_PATH);
+    return this.validator.validate('custom', { string: 'not empty' });
   });
 
   it('should return validation error on an invalid object', () => {
-    return this.validator.init(CORRECT_PATH)
-      .then(() => {
-        return this.validator.validate('custom', { string: 'not empty', extraneous: true });
-      })
+    this.validator.init(CORRECT_PATH);
+    return this.validator.validate('custom', { string: 'not empty', extraneous: true })
       .catchReturn(Errors.ValidationError);
   });
 });
