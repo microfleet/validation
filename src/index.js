@@ -57,7 +57,8 @@ class Validator {
    * @return {Promise}
    */
   init = (_dir, async = false) => {
-    const dir = _dir || this.schemaDir;
+    let dir = _dir || this.schemaDir;
+    dir = path.isAbsolute(dir) ? dir : path.resolve(process.cwd(), dir);
 
     let list;
     try {
