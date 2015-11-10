@@ -131,7 +131,7 @@ class Validator {
       return Promise.reject(err);
     }
 
-    return Promise.resolve();
+    return Promise.resolve(data);
   }
 
   /**
