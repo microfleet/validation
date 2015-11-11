@@ -6,6 +6,7 @@ describe('Validation', function validationSuite() {
   const CORRECT_PATH = path.resolve(__dirname, './fixtures');
   const BAD_PATH = path.resolve(__dirname, './notexistant');
   const EMPTY_PATH = path.resolve(__dirname, './fixtures/empty');
+  const RELATIVE_PATH = './fixtures';
 
   beforeEach(() => {
     this.validator = new Validation();
@@ -13,6 +14,10 @@ describe('Validation', function validationSuite() {
 
   it('should successfully init', () => {
     return this.validator.init(CORRECT_PATH);
+  });
+
+  it('should successfully init with a relative path', () => {
+    return this.validator.init(RELATIVE_PATH);
   });
 
   it('should reject promise with an IO Error on invalid dir', () => {

@@ -3,6 +3,7 @@ const validator = require('is-my-json-valid');
 const path = require('path');
 const fs = require('fs');
 const Errors = require('common-errors');
+const callsite = require('callsite');
 
 /**
  * Default filter function
@@ -58,7 +59,12 @@ class Validator {
    */
   init = (_dir, async = false) => {
     let dir = _dir || this.schemaDir;
-    dir = path.isAbsolute(dir) ? dir : path.resolve(process.cwd(), dir);
+
+    if (!path.isAbsolute(dir)) {
+      const stack = callsite();
+      const requester = path.dirname(stack[1].getFileName());
+      dir = path.resolve(requester, dir);
+    }
 
     let list;
     try {
