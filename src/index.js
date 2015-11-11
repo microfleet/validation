@@ -62,8 +62,21 @@ class Validator {
 
     if (!path.isAbsolute(dir)) {
       const stack = callsite();
-      const requester = path.dirname(stack[1].getFileName());
-      dir = path.resolve(requester, dir);
+      const length = stack.length;
+
+      // filter out the file itself
+      let iterator = 0;
+      let source;
+
+      while (iterator < length && !source) {
+        const call = stack[iterator++];
+        const filename = call.getFileName();
+        if (filename !== __filename) {
+          source = path.dirname(filename);
+        }
+      }
+
+      dir = path.resolve(source, dir);
     }
 
     let list;
