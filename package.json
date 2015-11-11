@@ -1,6 +1,6 @@
 {
   "name": "ms-amqp-validation",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "validation middleware for amqp transport layer",
   "main": "./lib/index.js",
   "scripts": {
