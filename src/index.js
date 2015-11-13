@@ -3,6 +3,7 @@ const validator = require('is-my-json-valid');
 const path = require('path');
 const fs = require('fs');
 const Errors = require('common-errors');
+const xtend = require('xtend');
 const callsite = require('callsite');
 
 /**
@@ -38,7 +39,7 @@ class Validator {
   constructor(schemaDir, filter = json, schemaOptions = Validator.defaultOptions) {
     this.schemaDir = schemaDir;
     this.schemaOptions = schemaOptions;
-    this.filter = filter;
+    this.filterOpt = filter;
     this.validators = {};
 
     // automatically init if we have schema dir
@@ -92,7 +93,7 @@ class Validator {
       throw error;
     }
 
-    const filenames = list.filter(this.filter);
+    const filenames = list.filter(this.filterOpt);
     if (filenames.length === 0) {
       const error = new Errors.io.FileNotFoundError(`no schemas found in dir '${dir}'`);
       if (async) {
@@ -105,7 +106,7 @@ class Validator {
     filenames.forEach((filename) => {
       const schema = require(path.resolve(dir, filename));
       const name = path.basename(filename, '.json');
-      this.validators[name] = filter ? this._initFilter(schema, this.schemaOptions) : this._initValidator(schema, this.schemaOptions);
+      this.validators[name] = this._initValidator(schema, xtend({ filter }, this.schemaOptions));
     });
   }
 
@@ -115,14 +116,6 @@ class Validator {
    */
   _initValidator(schema, opts) {
     return validator(schema, opts);
-  }
-
-  /**
-   * Initializes json schema filter
-   * @return {Validator.Filter}
-   */
-  _initFilter(schema, opts) {
-    return validator.filter(schema, opts);
   }
 
   /**
@@ -140,17 +133,24 @@ class Validator {
       return { error: new Errors.NotFoundError(`validator "${schema}" not found`) };
     }
 
-    const doc = validate(data);
+    validate(data);
+
     if (validate.errors) {
-      const error = new Errors.ValidationError(`route "${schema}" validation failed`, 400);
+      let onlyAdditionalProperties = true;
+      const error = new Errors.ValidationError(`route "${schema}" validation failed`);
       validate.errors.forEach((err) => {
+        if (err.message !== 'has additional properties') {
+          onlyAdditionalProperties = false;
+        }
         error.addError(new Errors.ValidationError(err.message, 400, err.field));
       });
 
-      return { error, doc };
+      error.code =  onlyAdditionalProperties ? 417 : 400;
+
+      return { error, doc: data };
     }
 
-    return { doc };
+    return { doc: data };
   }
 
   /**
@@ -163,6 +163,21 @@ class Validator {
   validate = (schema, data) => {
     const output = this._validate(schema, data);
     if ('error' in output) {
+      return Promise.reject(output.error);
+    }
+
+    return Promise.resolve(output.doc);
+  }
+
+  /**
+   * Make use of { filter: true } option and catch 417 errors
+   * @param  {String} schema
+   * @param  {Object} data
+   * @return {Promise}
+   */
+  filter = (schema, data) => {
+    const output = this._validate(schema, data);
+    if ('error' in output && output.error.code !== 417) {
       return Promise.reject(output.error);
     }
 

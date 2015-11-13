@@ -54,13 +54,13 @@ describe('Validation', function validationSuite() {
       .reflect()
       .then(result => {
         expect(result.isFulfilled()).to.be.eq(true);
-        expect(result.value()).to.be.deep.eq(true);
+        expect(result.value()).to.be.deep.eq({ string: 'not empty' });
       });
   });
 
   it('should filter extra properties', () => {
     this.validator.init(CORRECT_PATH, false, true);
-    return this.validator.validate('custom', { string: 'not empty', qq: 'not in schema' })
+    return this.validator.filter('custom', { string: 'not empty', qq: 'not in schema' })
       .reflect()
       .then(result => {
         expect(result.isFulfilled()).to.be.eq(true);
@@ -75,7 +75,7 @@ describe('Validation', function validationSuite() {
       .then(result => {
         expect(result.isRejected()).to.be.eq(true);
         expect(result.reason().name).to.be.eq('ValidationError');
-        expect(result.reason().code).to.be.eq(400);
+        expect(result.reason().code).to.be.eq(417);
       });
   });
 
@@ -83,13 +83,13 @@ describe('Validation', function validationSuite() {
     this.validator.init(CORRECT_PATH);
     const result = this.validator.validateSync('custom', { string: 'not empty' });
     expect(result.error).to.be.eq(undefined);
-    expect(result.doc).to.be.eq(true);
+    expect(result.doc).to.be.deep.eq({ string: 'not empty' });
   });
 
   it('should filter out extra props on sync validation', () => {
     this.validator.init(CORRECT_PATH, false, true);
     const result = this.validator.validateSync('custom', { string: 'not empty', extra: true });
-    expect(result.error).to.be.eq(undefined);
+    expect(result.error.code).to.be.eq(417);
     expect(result.doc).to.be.deep.eq({ string: 'not empty' });
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "ms-amqp-validation",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "validation middleware for amqp transport layer",
   "main": "./lib/index.js",
   "scripts": {
@@ -32,6 +32,7 @@
     "bluebird": "^3.0.5",
     "callsite": "^1.0.0",
     "common-errors": "^0.5.3",
-    "is-my-json-valid": "^2.12.3"
+    "is-my-json-valid": "^2.12.3",
+    "xtend": "^4.0.1"
   }
 }
