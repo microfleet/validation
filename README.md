@@ -27,8 +27,9 @@ const validator = new Validator('./schemas');
 validator.validate('config', {
   configuration: 'string'
 })
-.then(() => {
+.then(doc => {
   // all good
+  // handle doc, which would eq { configuration: 'string' }
 })
 .catch(Errors.ValidationError, (error) => {
   // handle error here
@@ -44,4 +45,10 @@ if (result.error) {
 
 // init filter
 validator.init('./dir', null, true); // all schemas in this dir will filter out additional properties instead of throwing an error
+
+// catches when we only have 417 errors
+validator.filter('config', { conf: 'string', extra: true })
+  .then(result => {
+    //  { conf: 'string' }
+  });
 ```
