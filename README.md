@@ -21,7 +21,7 @@ honest - it strips down `.json` only. Based on the bluebird promises.
 
 const Errors = require('common-errors');
 const Validator = require('ms-amqp-validation');
-const validator = new Validator(path.resolve(__dirname, './schemas'));
+const validator = new Validator('./schemas');
 
 // some logic here
 validator.validate('config', {
@@ -34,11 +34,14 @@ validator.validate('config', {
   // handle error here
 });
 
-const err = validator.validateSync('config', { data: true });
-if (err) {
+const result = validator.validateSync('config', { data: true });
+if (result.error) {
   // handle error!
 }
 
 // do stuff
 // ...
+
+// init filter
+validator.init('./dir', null, true); // all schemas in this dir will filter out additional properties instead of throwing an error
 ```

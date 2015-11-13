@@ -57,7 +57,7 @@ class Validator {
    * @param  {String}  _dir - optional, path must be absolute
    * @return {Promise}
    */
-  init = (_dir, async = false) => {
+  init = (_dir, async = false, filter = false) => {
     let dir = _dir || this.schemaDir;
 
     if (!path.isAbsolute(dir)) {
@@ -104,8 +104,25 @@ class Validator {
 
     filenames.forEach((filename) => {
       const schema = require(path.resolve(dir, filename));
-      this.validators[path.basename(filename, '.json')] = validator(schema, this.schemaOptions);
+      const name = path.basename(filename, '.json');
+      this.validators[name] = filter ? this._initFilter(schema, this.schemaOptions) : this._initValidator(schema, this.schemaOptions);
     });
+  }
+
+  /**
+   * Initializes basic validator
+   * @return {Validator}
+   */
+  _initValidator(schema, opts) {
+    return validator(schema, opts);
+  }
+
+  /**
+   * Initializes json schema filter
+   * @return {Validator.Filter}
+   */
+  _initFilter(schema, opts) {
+    return validator.filter(schema, opts);
   }
 
   /**
@@ -120,21 +137,20 @@ class Validator {
     const validate = this.validators[schema];
 
     if (!validate) {
-      return new Errors.NotFoundError(`validator "${schema}" not found`);
+      return { error: new Errors.NotFoundError(`validator "${schema}" not found`) };
     }
 
-    validate(data);
-
+    const doc = validate(data);
     if (validate.errors) {
       const error = new Errors.ValidationError(`route "${schema}" validation failed`, 400);
       validate.errors.forEach((err) => {
         error.addError(new Errors.ValidationError(err.message, 400, err.field));
       });
 
-      return error;
+      return { error, doc };
     }
 
-    return undefined;
+    return { doc };
   }
 
   /**
@@ -145,12 +161,12 @@ class Validator {
    * @return {Promise}
    */
   validate = (schema, data) => {
-    const err = this._validate(schema, data);
-    if (err) {
-      return Promise.reject(err);
+    const output = this._validate(schema, data);
+    if ('error' in output) {
+      return Promise.reject(output.error);
     }
 
-    return Promise.resolve(data);
+    return Promise.resolve(output.doc);
   }
 
   /**
