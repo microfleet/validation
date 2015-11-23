@@ -3,7 +3,6 @@ const ajv = require('ajv');
 const path = require('path');
 const fs = require('fs');
 const Errors = require('common-errors');
-const xtend = require('xtend');
 const callsite = require('callsite');
 
 /**
@@ -27,7 +26,7 @@ class Validator {
    */
   static defaultOptions = {
     allErrors: true,
-    verbose: true
+    verbose: true,
   };
 
   /**
@@ -112,7 +111,7 @@ class Validator {
       _ajv.addSchema(schema);
     });
 
-    this._ajv = _ajv
+    this._ajv = _ajv;
   }
 
   /**
@@ -124,7 +123,7 @@ class Validator {
    * @return {Error|Undefined}
    */
   _validate(schema, data) {
-    const validate = this._ajv.getSchema(schema)
+    const validate = this._ajv.getSchema(schema);
 
     if (!validate) {
       return { error: new Errors.NotFoundError(`validator "${schema}" not found`) };
@@ -133,7 +132,7 @@ class Validator {
     validate(data);
 
     if (validate.errors) {
-      const readable = this._ajv.errorsText(validate.errors)
+      const readable = this._ajv.errorsText(validate.errors);
 
       let onlyAdditionalProperties = true;
       const error = new Errors.ValidationError(`${schema} validation failed: ${readable}`);
@@ -144,7 +143,7 @@ class Validator {
         error.addError(new Errors.ValidationError(err.message, 400, err.field));
       });
 
-      error.code =  onlyAdditionalProperties ? 417 : 400;
+      error.code = onlyAdditionalProperties ? 417 : 400;
 
       return { error, doc: data };
     }
@@ -157,7 +156,7 @@ class Validator {
    * @return {Object} Ajv instance
    */
   get ajv() {
-    return this._ajv
+    return this._ajv;
   }
 
   /**
