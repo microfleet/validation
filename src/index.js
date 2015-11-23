@@ -1,5 +1,5 @@
 const Promise = require('bluebird');
-const validator = require('is-my-json-valid');
+const ajv = require('ajv');
 const path = require('path');
 const fs = require('fs');
 const Errors = require('common-errors');
@@ -22,11 +22,12 @@ class Validator {
 
   /**
    * Read more about options here:
-   * https://github.com/mafintosh/is-my-json-valid
+   * https://github.com/epoberezkin/ajv
    * @type {Object}
    */
   static defaultOptions = {
-    greedy: true,
+    allErrors: true,
+    verbose: true
   };
 
   /**
@@ -103,19 +104,15 @@ class Validator {
       throw error;
     }
 
+    this.schemaOptions.removeAdditional = filter;
+    const _ajv = ajv(this.schemaOptions);
+
     filenames.forEach((filename) => {
       const schema = require(path.resolve(dir, filename));
-      const name = path.basename(filename, '.json');
-      this.validators[name] = this._initValidator(schema, xtend({ filter }, this.schemaOptions));
+      _ajv.addSchema(schema);
     });
-  }
 
-  /**
-   * Initializes basic validator
-   * @return {Validator}
-   */
-  _initValidator(schema, opts) {
-    return validator(schema, opts);
+    this._ajv = _ajv
   }
 
   /**
@@ -127,7 +124,7 @@ class Validator {
    * @return {Error|Undefined}
    */
   _validate(schema, data) {
-    const validate = this.validators[schema];
+    const validate = this._ajv.getSchema(schema)
 
     if (!validate) {
       return { error: new Errors.NotFoundError(`validator "${schema}" not found`) };
@@ -136,10 +133,12 @@ class Validator {
     validate(data);
 
     if (validate.errors) {
+      const readable = this._ajv.errorsText(validate.errors)
+
       let onlyAdditionalProperties = true;
-      const error = new Errors.ValidationError(`route "${schema}" validation failed`);
+      const error = new Errors.ValidationError(`${schema} validation failed: ${readable}`);
       validate.errors.forEach((err) => {
-        if (err.message !== 'has additional properties') {
+        if (err.message !== 'should NOT have additional properties') {
           onlyAdditionalProperties = false;
         }
         error.addError(new Errors.ValidationError(err.message, 400, err.field));
@@ -151,6 +150,14 @@ class Validator {
     }
 
     return { doc: data };
+  }
+
+  /**
+   * In case you need raw validator instance, e.g. to add more schemas later
+   * @return {Object} Ajv instance
+   */
+  get ajv() {
+    return this._ajv
   }
 
   /**
