@@ -1,7 +1,7 @@
 {
-  "name": "ms-amqp-validation",
-  "version": "0.4.1",
-  "description": "validation middleware for amqp transport layer",
+  "name": "ms-validation",
+  "version": "0.5.0",
+  "description": "ajv-based validation utils for mservice architecture",
   "main": "./lib/index.js",
   "scripts": {
     "pretest": "npm rebuild",
