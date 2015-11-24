@@ -59,7 +59,7 @@ describe('Validation', function validationSuite() {
   });
 
   it('should filter extra properties', () => {
-    this.validator.init(CORRECT_PATH, false, true);
+    this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
     return this.validator.filter('custom', { string: 'not empty', qq: 'not in schema' })
       .reflect()
       .then(result => {
@@ -87,10 +87,10 @@ describe('Validation', function validationSuite() {
   });
 
   it('should filter out extra props on sync validation', () => {
-    this.validator.init(CORRECT_PATH, false, true);
+    this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
     const result = this.validator.validateSync('custom', { string: 'not empty', extra: true });
     // ajv does not throw errors in this case
-    //(result.error.code).to.be.eq(417);
+    expect(result.error).to.be.eq(undefined);
     expect(result.doc).to.be.deep.eq({ string: 'not empty' });
   });
 });

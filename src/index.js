@@ -27,6 +27,7 @@ class Validator {
   static defaultOptions = {
     allErrors: true,
     verbose: true,
+    removeAdditional: false,
   };
 
   /**
@@ -36,11 +37,14 @@ class Validator {
    * @param  {Function} filter
    * @param  {Object}   schemaOptions
    */
-  constructor(schemaDir, filter = json, schemaOptions = Validator.defaultOptions) {
+  constructor(schemaDir, filter, schemaOptions = {}) {
     this.schemaDir = schemaDir;
-    this.schemaOptions = schemaOptions;
-    this.filterOpt = filter;
+    this.schemaOptions = Object.assign({}, Validator.defaultOptions, schemaOptions);
+    this.filterOpt = filter || json;
     this.validators = {};
+
+    // init
+    this._ajv = ajv(this.schemaOptions);
 
     // automatically init if we have schema dir
     if (schemaDir) {
@@ -58,7 +62,7 @@ class Validator {
    * @param  {String}  _dir - optional, path must be absolute
    * @return {Promise}
    */
-  init = (_dir, async = false, filter = false) => {
+  init = (_dir, async = false) => {
     let dir = _dir || this.schemaDir;
 
     if (!path.isAbsolute(dir)) {
@@ -103,15 +107,11 @@ class Validator {
       throw error;
     }
 
-    this.schemaOptions.removeAdditional = filter;
-    const _ajv = ajv(this.schemaOptions);
-
+    const _ajv = this.ajv;
     filenames.forEach((filename) => {
       const schema = require(path.resolve(dir, filename));
       _ajv.addSchema(schema);
     });
-
-    this._ajv = _ajv;
   }
 
   /**
