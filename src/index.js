@@ -4,6 +4,48 @@ const path = require('path');
 const fs = require('fs');
 const Errors = require('common-errors');
 const callsite = require('callsite');
+const { ValidationError } = Errors;
+
+/**
+ * Patch it! We rely on isntanceof Error when serializing and deserializing errors and
+ * this breaks it
+ */
+ValidationError.prototype.toJSON = function toJSON() {
+  const o = {
+    name: this.name,
+  };
+
+  // so it's not visible
+  Object.defineProperty(o, 'super_', { get: Error });
+
+  if (this.errors) {
+    if (this.message) {
+      o.message = this.message;
+    }
+
+    if (this.code) {
+      o.code = this.code;
+    }
+
+    o.errors = this.errors.map(function remapErrors(error) {
+      return error.toJSON();
+    });
+  } else {
+    if (this.message) {
+      o.text = this.message;
+    }
+
+    if (this.code) {
+      o.code = this.code;
+    }
+
+    if (this.field) {
+      o.field = this.field;
+    }
+  }
+
+  return o;
+};
 
 /**
  * Default filter function
@@ -135,12 +177,12 @@ class Validator {
       const readable = this._ajv.errorsText(validate.errors);
 
       let onlyAdditionalProperties = true;
-      const error = new Errors.ValidationError(`${schema} validation failed: ${readable}`);
+      const error = new ValidationError(`${schema} validation failed: ${readable}`);
       validate.errors.forEach((err) => {
         if (err.message !== 'should NOT have additional properties') {
           onlyAdditionalProperties = false;
         }
-        error.addError(new Errors.ValidationError(err.message, 400, err.field));
+        error.addError(new ValidationError(err.message, 400, err.field));
       });
 
       error.code = onlyAdditionalProperties ? 417 : 400;
