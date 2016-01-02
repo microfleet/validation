@@ -2,7 +2,7 @@ const { expect } = require('chai');
 const path = require('path');
 
 describe('Validation', function validationSuite() {
-  const Validation = require('../src');
+  const Validation = require('../lib');
   const CORRECT_PATH = path.resolve(__dirname, './fixtures');
   const BAD_PATH = path.resolve(__dirname, './notexistant');
   const EMPTY_PATH = path.resolve(__dirname, './fixtures/empty');

@@ -81,7 +81,7 @@ class Validator {
    */
   constructor(schemaDir, filter, schemaOptions = {}) {
     this.schemaDir = schemaDir;
-    this.schemaOptions = Object.assign({}, Validator.defaultOptions, schemaOptions);
+    this.schemaOptions = { ...Validator.defaultOptions, ...schemaOptions };
     this.filterOpt = filter || json;
     this.validators = {};
 
@@ -150,9 +150,9 @@ class Validator {
     }
 
     const _ajv = this.ajv;
-    filenames.forEach((filename) => {
+    filenames.forEach(filename => {
       const schema = require(path.resolve(dir, filename));
-      _ajv.addSchema(schema);
+      _ajv.addSchema(schema, schema.id || path.basename(filename, path.extname(filename)));
     });
   }
 
@@ -178,7 +178,7 @@ class Validator {
 
       let onlyAdditionalProperties = true;
       const error = new ValidationError(`${schema} validation failed: ${readable}`);
-      validate.errors.forEach((err) => {
+      validate.errors.forEach(err => {
         if (err.message !== 'should NOT have additional properties') {
           onlyAdditionalProperties = false;
         }

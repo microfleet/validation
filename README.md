@@ -1,14 +1,15 @@
-# Validation module for amqp transport of microservices
+# Validation module
 
 [![Build Status](https://semaphoreci.com/api/v1/projects/8895d4a7-aeaa-4453-96e4-32bb4960536e/633151/badge.svg)](https://semaphoreci.com/makeomatic/ms-validation)
 
-This is basically a wrapper of [is-my-json-valid](https://github.com/mafintosh/is-my-json-valid) module.
-What it does - is accepts a directory with schemas, reads it in an async fashion and caches validators under it's name, minus it's extension (to be completely)
-honest - it strips down `.json` only. Based on the bluebird promises.
+This is basically a wrapper of [ajv](https://github.com/epoberezkin/ajv) module.
+What it does - is accepts a directory with schemas, reads it in an async or sync fashion based on your preference
+and caches validators under it's name, minus it's extension (to be completely honest - it strips down `.json` only).
+Based on the bluebird promises.
 
 ## Installation
 
-`npm i ms-amqp-validation -S`
+`npm i ms-validation -S`
 
 ## Usage
 
