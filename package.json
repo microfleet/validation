@@ -7,11 +7,11 @@
     "pretest": "npm run compile",
     "prepublish": "npm run compile",
     "test": "./node_modules/.bin/mocha",
-    "semantic-release": "./node_modules/.bin/semantic-release pre && npm publish && ./node_modules/.bin/semantic-release post"
+    "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/makeomatic/ms-validation.git"
+    "url": "https://github.com/makeomatic/ms-validation.git"
   },
   "author": "Vitaly Aminev <v@makeomatic.ru>",
   "contributors": [

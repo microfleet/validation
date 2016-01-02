@@ -70,6 +70,7 @@ class Validator {
     allErrors: true,
     verbose: true,
     removeAdditional: false,
+    v5: true,
   };
 
   /**
