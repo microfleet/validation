@@ -155,7 +155,7 @@ class Validator {
       const schema = require(path.resolve(dir, filename));
       _ajv.addSchema(schema, schema.id || path.basename(filename, path.extname(filename)));
     });
-  }
+  };
 
   /**
    * @private
@@ -216,7 +216,7 @@ class Validator {
     }
 
     return Promise.resolve(output.doc);
-  }
+  };
 
   /**
    * Make use of { filter: true } option and catch 417 errors
@@ -231,7 +231,7 @@ class Validator {
     }
 
     return Promise.resolve(output.doc);
-  }
+  };
 
   /**
    * Synchronously validates and returns either an Error object or `void 0`
@@ -241,7 +241,7 @@ class Validator {
    */
   validateSync = (schema, data) => {
     return this._validate(schema, data);
-  }
+  };
 
 }
 
