@@ -71,6 +71,7 @@ class Validator {
     verbose: true,
     removeAdditional: false,
     v5: true,
+    useDefaults: true,
   };
 
   /**
