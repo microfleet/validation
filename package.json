@@ -32,7 +32,7 @@
     "babel-plugin-transform-es2015-spread": "^6.4.0",
     "babel-plugin-transform-object-rest-spread": "^6.3.13",
     "babel-plugin-transform-strict-mode": "^6.3.13",
-    "babel-register": "^6.3.13",
+    "babel-register": "^6.5.2",
     "chai": "^3.4.1",
     "cz-conventional-changelog": "^1.1.5",
     "eslint": "^1.10.3",
