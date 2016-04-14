@@ -37,7 +37,7 @@
     "cz-conventional-changelog": "^1.1.5",
     "eslint": "^1.10.3",
     "eslint-config-airbnb": "^3.0.1",
-    "eslint-plugin-mocha": "^1.1.0",
+    "eslint-plugin-mocha": "^2.2.0",
     "mocha": "^2.3.4",
     "semantic-release": "^4.3.5"
   },
