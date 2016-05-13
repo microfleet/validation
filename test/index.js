@@ -1,8 +1,8 @@
 const { expect } = require('chai');
 const path = require('path');
+const Validation = require('../lib');
 
 describe('Validation', function validationSuite() {
-  const Validation = require('../lib');
   const CORRECT_PATH = path.resolve(__dirname, './fixtures');
   const BAD_PATH = path.resolve(__dirname, './notexistant');
   const EMPTY_PATH = path.resolve(__dirname, './fixtures/empty');
@@ -20,23 +20,23 @@ describe('Validation', function validationSuite() {
     this.validator.init(RELATIVE_PATH);
   });
 
-  it('should reject promise with an IO Error on invalid dir', () => {
-    return this.validator.init(BAD_PATH, true)
+  it('should reject promise with an IO Error on invalid dir', () => (
+    this.validator.init(BAD_PATH, true)
       .reflect()
       .then(result => {
         expect(result.isRejected()).to.be.eq(true);
         expect(result.reason().name).to.be.eq('IOError');
-      });
-  });
+      })
+  ));
 
-  it('should reject promise with a file not found error on an empty dir', () => {
-    return this.validator.init(EMPTY_PATH, true)
+  it('should reject promise with a file not found error on an empty dir', () => (
+    this.validator.init(EMPTY_PATH, true)
       .reflect()
       .then(result => {
         expect(result.isRejected()).to.be.eq(true);
         expect(result.reason().name).to.be.eq('FileNotFoundError');
-      });
-  });
+      })
+  ));
 
   it('should reject promise with a NotFoundError on a non-existant validator', () => {
     this.validator.init(CORRECT_PATH);
