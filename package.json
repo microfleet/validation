@@ -3,10 +3,11 @@
   "description": "ajv-based validation utils for mservice architecture",
   "main": "./lib/index.js",
   "scripts": {
-    "compile": "./node_modules/.bin/babel -d ./lib ./src",
+    "compile": "babel -d ./lib ./src",
     "pretest": "npm run compile",
     "prepublish": "npm run compile",
-    "test": "./node_modules/.bin/mocha",
+    "test": "npm run lint && mocha",
+    "lint": "eslint ./src",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "repository": {
@@ -24,7 +25,7 @@
   "homepage": "https://github.com/makeomatic/ms-validation#readme",
   "devDependencies": {
     "babel-cli": "^6.4.0",
-    "babel-eslint": "^5.0.0-beta6",
+    "babel-eslint": "^6.0.0",
     "babel-plugin-transform-class-properties": "^6.4.0",
     "babel-plugin-transform-es2015-destructuring": "^6.4.0",
     "babel-plugin-transform-es2015-parameters": "^6.4.0",
@@ -35,14 +36,15 @@
     "babel-register": "^6.3.13",
     "chai": "^3.4.1",
     "cz-conventional-changelog": "^1.1.5",
-    "eslint": "^1.10.3",
-    "eslint-config-airbnb": "^3.0.1",
-    "eslint-plugin-mocha": "^1.1.0",
+    "eslint": "^2.9.0",
+    "eslint-config-airbnb-base": "^3.0.1",
+    "eslint-plugin-import": "^1.8.0",
+    "eslint-plugin-mocha": "^2.2.0",
     "mocha": "^2.3.4",
     "semantic-release": "^4.3.5"
   },
   "dependencies": {
-    "ajv": "^3.1.1",
+    "ajv": "^4.0.5",
     "bluebird": "^3.1.1",
     "callsite": "^1.0.0",
     "common-errors": "^0.5.3"

@@ -27,9 +27,7 @@ ValidationError.prototype.toJSON = function toJSON() {
       o.code = this.code;
     }
 
-    o.errors = this.errors.map(function remapErrors(error) {
-      return error.toJSON();
-    });
+    o.errors = this.errors.map(error => error.toJSON());
   } else {
     if (this.message) {
       o.text = this.message;
@@ -88,7 +86,7 @@ class Validator {
     this.validators = {};
 
     // init
-    this._ajv = ajv(this.schemaOptions);
+    this.$ajv = ajv(this.schemaOptions);
 
     // automatically init if we have schema dir
     if (schemaDir) {
@@ -106,7 +104,7 @@ class Validator {
    * @param  {String}  _dir - optional, path must be absolute
    * @return {Promise}
    */
-  init = (_dir, async = false) => {
+  init(_dir, isAsync = false) {
     let dir = _dir || this.schemaDir;
 
     if (!path.isAbsolute(dir)) {
@@ -134,7 +132,7 @@ class Validator {
     } catch (err) {
       const error = new Errors.io.IOError(`was unable to read ${dir}`, err);
 
-      if (async) {
+      if (isAsync) {
         return Promise.reject(error);
       }
 
@@ -144,19 +142,21 @@ class Validator {
     const filenames = list.filter(this.filterOpt);
     if (filenames.length === 0) {
       const error = new Errors.io.FileNotFoundError(`no schemas found in dir '${dir}'`);
-      if (async) {
+      if (isAsync) {
         return Promise.reject(error);
       }
 
       throw error;
     }
 
-    const _ajv = this.ajv;
+    const $ajv = this.$ajv;
     filenames.forEach(filename => {
-      const schema = require(path.resolve(dir, filename));
-      _ajv.addSchema(schema, schema.id || path.basename(filename, path.extname(filename)));
+      const schema = JSON.parse(fs.readFileSync(path.resolve(dir, filename)));
+      $ajv.addSchema(schema, schema.id || path.basename(filename, path.extname(filename)));
     });
-  };
+
+    return Promise.resolve();
+  }
 
   /**
    * @private
@@ -166,8 +166,8 @@ class Validator {
    * @param  {Mixed}  data
    * @return {Error|Undefined}
    */
-  _validate(schema, data) {
-    const validate = this._ajv.getSchema(schema);
+  $validate(schema, data) {
+    const validate = this.$ajv.getSchema(schema);
 
     if (!validate) {
       return { error: new Errors.NotFoundError(`validator "${schema}" not found`) };
@@ -176,7 +176,7 @@ class Validator {
     validate(data);
 
     if (validate.errors) {
-      const readable = this._ajv.errorsText(validate.errors);
+      const readable = this.$ajv.errorsText(validate.errors);
 
       let onlyAdditionalProperties = true;
       const error = new ValidationError(`${schema} validation failed: ${readable}`);
@@ -200,7 +200,7 @@ class Validator {
    * @return {Object} Ajv instance
    */
   get ajv() {
-    return this._ajv;
+    return this.$ajv;
   }
 
   /**
@@ -211,7 +211,7 @@ class Validator {
    * @return {Promise}
    */
   validate = (schema, data) => {
-    const output = this._validate(schema, data);
+    const output = this.$validate(schema, data);
     if ('error' in output) {
       return Promise.reject(output.error);
     }
@@ -226,7 +226,7 @@ class Validator {
    * @return {Promise}
    */
   filter = (schema, data) => {
-    const output = this._validate(schema, data);
+    const output = this.$validate(schema, data);
     if ('error' in output && output.error.code !== 417) {
       return Promise.reject(output.error);
     }
@@ -240,9 +240,7 @@ class Validator {
    * @param  {Mixed}  data
    * @return {Error|Undefined}
    */
-  validateSync = (schema, data) => {
-    return this._validate(schema, data);
-  };
+  validateSync = (schema, data) => this.$validate(schema, data);
 
 }
 
