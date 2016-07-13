@@ -24,7 +24,7 @@ Based on the bluebird promises.
 //
 
 const Errors = require('common-errors');
-const Validator = require('ms-amqp-validation');
+const Validator = require('ms-validation');
 const validator = new Validator('./schemas');
 
 // some logic here
