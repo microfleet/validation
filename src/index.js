@@ -2,9 +2,8 @@ const Promise = require('bluebird');
 const ajv = require('ajv');
 const path = require('path');
 const fs = require('fs');
-const Errors = require('common-errors');
 const callsite = require('callsite');
-const { ValidationError } = Errors;
+const { ValidationError, io, NotFoundError } = require('common-errors');
 
 /**
  * Patch it! We rely on isntanceof Error when serializing and deserializing errors and
@@ -130,7 +129,7 @@ class Validator {
     try {
       list = fs.readdirSync(dir);
     } catch (err) {
-      const error = new Errors.io.IOError(`was unable to read ${dir}`, err);
+      const error = new io.IOError(`was unable to read ${dir}`, err);
 
       if (isAsync) {
         return Promise.reject(error);
@@ -141,7 +140,7 @@ class Validator {
 
     const filenames = list.filter(this.filterOpt);
     if (filenames.length === 0) {
-      const error = new Errors.io.FileNotFoundError(`no schemas found in dir '${dir}'`);
+      const error = new io.FileNotFoundError(`no schemas found in dir '${dir}'`);
       if (isAsync) {
         return Promise.reject(error);
       }
@@ -170,7 +169,7 @@ class Validator {
     const validate = this.$ajv.getSchema(schema);
 
     if (!validate) {
-      return { error: new Errors.NotFoundError(`validator "${schema}" not found`) };
+      return { error: new NotFoundError(`validator "${schema}" not found`) };
     }
 
     validate(data);
