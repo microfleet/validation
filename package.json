@@ -35,7 +35,7 @@
     "babel-plugin-transform-strict-mode": "^6.11.3",
     "babel-register": "^6.11.6",
     "chai": "^3.4.1",
-    "cz-conventional-changelog": "^1.1.5",
+    "cz-conventional-changelog": "^2.0.0",
     "eslint": "^3.1.1",
     "eslint-config-airbnb-base": "^5.0.0",
     "eslint-plugin-import": "^1.12.0",
