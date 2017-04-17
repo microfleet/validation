@@ -44,7 +44,7 @@
     "semantic-release": "^4.3.5"
   },
   "dependencies": {
-    "ajv": "^4.2.0",
+    "ajv": "^5.0.0",
     "bluebird": "^3.4.1",
     "callsite": "^1.0.0",
     "common-errors": "^1.0.0"
