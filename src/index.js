@@ -115,11 +115,12 @@ class Validator {
       let source;
 
       while (iterator < length && !source) {
-        const call = stack[iterator++];
+        const call = stack[iterator];
         const filename = call.getFileName();
         if (filename !== __filename) {
           source = path.dirname(filename);
         }
+        iterator += 1;
       }
 
       dir = path.resolve(source, dir);
@@ -149,7 +150,7 @@ class Validator {
     }
 
     const $ajv = this.$ajv;
-    filenames.forEach(filename => {
+    filenames.forEach((filename) => {
       const schema = JSON.parse(fs.readFileSync(path.resolve(dir, filename)));
       $ajv.addSchema(schema, schema.id || path.basename(filename, path.extname(filename)));
     });
@@ -179,7 +180,7 @@ class Validator {
 
       let onlyAdditionalProperties = true;
       const error = new ValidationError(`${schema} validation failed: ${readable}`);
-      validate.errors.forEach(err => {
+      validate.errors.forEach((err) => {
         if (err.message !== 'should NOT have additional properties') {
           onlyAdditionalProperties = false;
         }
