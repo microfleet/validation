@@ -1,5 +1,5 @@
 const Promise = require('bluebird');
-const ajv = require('ajv');
+const Ajv = require('ajv');
 const path = require('path');
 const fs = require('fs');
 const callsite = require('callsite');
@@ -9,39 +9,37 @@ const { ValidationError, io, NotFoundError } = require('common-errors');
  * Patch it! We rely on isntanceof Error when serializing and deserializing errors and
  * this breaks it
  */
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+const invokeToJSON = error => error.toJSON();
 ValidationError.prototype.toJSON = function toJSON() {
-  const o = {
-    name: this.name,
-  };
-
-  // so it's not visible
-  Object.defineProperty(o, 'super_', { get: Error });
-
-  if (this.errors) {
-    if (this.message) {
-      o.message = this.message;
-    }
-
-    if (this.code) {
-      o.code = this.code;
-    }
-
-    o.errors = this.errors.map(error => error.toJSON());
-  } else {
-    if (this.message) {
-      o.text = this.message;
-    }
-
-    if (this.code) {
-      o.code = this.code;
-    }
-
-    if (this.field) {
-      o.field = this.field;
-    }
-  }
-
-  return o;
+  return Object.create(Object.prototype, {
+    name: {
+      enumerable: true,
+      configurable: true,
+      value: this.name,
+    },
+    super_: {
+      enumerable: false,
+      configurable: false,
+      value: Error,
+    },
+    message: {
+      enumerable: hasOwnProperty.call(this, 'message'),
+      value: this.message,
+    },
+    code: {
+      enumerable: hasOwnProperty.call(this, 'code'),
+      value: this.code,
+    },
+    field: {
+      enumerable: !!this.field,
+      value: this.field,
+    },
+    errors: {
+      enumerable: Array.isArray(this.errors),
+      value: Array.isArray(this.errors) ? this.errors.map(invokeToJSON) : undefined,
+    },
+  });
 };
 
 /**
@@ -69,6 +67,7 @@ class Validator {
     removeAdditional: false,
     v5: true,
     useDefaults: true,
+    $data: true,
   };
 
   /**
@@ -85,7 +84,7 @@ class Validator {
     this.validators = {};
 
     // init
-    this.$ajv = ajv(this.schemaOptions);
+    this.$ajv = new Ajv(this.schemaOptions);
 
     // automatically init if we have schema dir
     if (schemaDir) {
@@ -184,7 +183,12 @@ class Validator {
         if (err.message !== 'should NOT have additional properties') {
           onlyAdditionalProperties = false;
         }
-        error.addError(new ValidationError(err.message, 400, err.field));
+
+        const field = err.keyword === 'additionalProperties'
+          ? `${err.dataPath}/${err.params.additionalProperty}`
+          : err.field;
+
+        error.addError(new ValidationError(err.message, 400, field));
       });
 
       error.code = onlyAdditionalProperties ? 417 : 400;
@@ -227,7 +231,7 @@ class Validator {
    */
   filter = (schema, data) => {
     const output = this.$validate(schema, data);
-    if ('error' in output && output.error.code !== 417) {
+    if (hasOwnProperty.call(output, 'error') && output.error.code !== 417) {
       return Promise.reject(output.error);
     }
 
