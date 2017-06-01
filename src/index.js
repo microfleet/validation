@@ -1,5 +1,6 @@
 const Promise = require('bluebird');
 const Ajv = require('ajv');
+const keywords = require('ajv-keywords');
 const path = require('path');
 const fs = require('fs');
 const callsite = require('callsite');
@@ -84,7 +85,13 @@ class Validator {
     this.validators = {};
 
     // init
-    this.$ajv = new Ajv(this.schemaOptions);
+    const ajv = new Ajv(this.schemaOptions);
+
+    // enable extra keywords
+    keywords(ajv);
+
+    // save instance
+    this.$ajv = ajv;
 
     // automatically init if we have schema dir
     if (schemaDir) {
