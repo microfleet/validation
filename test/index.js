@@ -1,5 +1,7 @@
 const assert = require('assert');
 const path = require('path');
+const { ValidationError } = require('common-errors');
+const { inspectPromise } = require('@makeomatic/deploy');
 
 describe('Validation', function validationSuite() {
   const Validation = require('../lib');
@@ -23,9 +25,9 @@ describe('Validation', function validationSuite() {
   it('should reject promise with an IO Error on invalid dir', () => (
     this.validator.init(BAD_PATH, true)
       .reflect()
+      .then(inspectPromise(false))
       .then((result) => {
-        assert.ok(result.isRejected());
-        assert.equal(result.reason().name, 'IOError');
+        assert.equal(result.name, 'IOError');
         return null;
       })
   ));
@@ -33,9 +35,9 @@ describe('Validation', function validationSuite() {
   it('should reject promise with a file not found error on an empty dir', () => (
     this.validator.init(EMPTY_PATH, true)
       .reflect()
+      .then(inspectPromise(false))
       .then((result) => {
-        assert.ok(result.isRejected());
-        assert.equal(result.reason().name, 'FileNotFoundError');
+        assert.equal(result.name, 'FileNotFoundError');
         return null;
       })
   ));
@@ -44,20 +46,21 @@ describe('Validation', function validationSuite() {
     this.validator.init(CORRECT_PATH);
     return this.validator.validate('bad-route', {})
       .reflect()
+      .then(inspectPromise(false))
       .then((result) => {
-        assert.ok(result.isRejected());
-        assert.equal(result.reason().name, 'NotFoundError');
+        assert.equal(result.name, 'NotFoundError');
         return null;
       });
   });
 
   it('should validate a correct object', () => {
     this.validator.init(CORRECT_PATH);
-    return this.validator.validate('custom', { string: 'not empty' })
+    return this.validator
+      .validate('custom', { string: 'not empty' })
       .reflect()
+      .then(inspectPromise())
       .then((result) => {
-        assert.ok(result.isFulfilled());
-        assert.deepEqual(result.value(), { string: 'not empty' });
+        assert.deepEqual(result, { string: 'not empty' });
         return null;
       });
   });
@@ -66,22 +69,20 @@ describe('Validation', function validationSuite() {
     this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
     return this.validator.filter('custom', { string: 'not empty', qq: 'not in schema' })
       .reflect()
+      .then(inspectPromise())
       .then((result) => {
-        assert.ok(result.isFulfilled());
-        assert.deepEqual(result.value(), { string: 'not empty' });
+        assert.deepEqual(result, { string: 'not empty' });
         return null;
       });
   });
 
   it('should return validation error on an invalid object', () => {
     this.validator.init(CORRECT_PATH);
-    return this.validator.validate('custom', { string: 'not empty', extraneous: true })
+    return this.validator
+      .validate('custom', { string: 'not empty', extraneous: true })
       .reflect()
-      .then((result) => {
-        assert.ok(result.isRejected());
-
-        const reason = result.reason();
-
+      .then(inspectPromise(false))
+      .then((reason) => {
         assert.equal(reason.name, 'ValidationError');
         assert.equal(reason.code, 417);
         assert.deepEqual(reason.toJSON(), {
@@ -113,5 +114,21 @@ describe('Validation', function validationSuite() {
     // ajv does not throw errors in this case
     assert.ifError(result.error);
     assert.deepEqual(result.doc, { string: 'not empty' });
+  });
+
+  it('throws when using ifError', () => {
+    this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
+
+    assert.throws(() => {
+      this.validator.ifError('custom', { string: 200, extra: true });
+    }, ValidationError);
+  });
+
+  it('doesn\'t throw on ifError', () => {
+    this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
+
+    assert.doesNotThrow(() => {
+      this.validator.ifError('custom', { string: 'not empty', extra: true });
+    });
   });
 });

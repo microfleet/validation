@@ -2,8 +2,10 @@ const Promise = require('bluebird');
 const Ajv = require('ajv');
 const keywords = require('ajv-keywords');
 const path = require('path');
-const fs = require('fs');
 const callsite = require('callsite');
+const glob = require('glob');
+const fs = require('fs');
+const debug = require('debug')('ms-validation');
 const { ValidationError, io, NotFoundError } = require('common-errors');
 
 /**
@@ -48,15 +50,13 @@ ValidationError.prototype.toJSON = function toJSON() {
  * @param  {String} filename
  * @return {Booleam}
  */
-function json(filename) {
-  return path.extname(filename) === '.json';
-}
+const json = filename => path.extname(filename) === '.json';
+const slashes = new RegExp(path.delimiter, 'g');
 
 /**
  * @namespace Validator
  */
 class Validator {
-
   /**
    * Read more about options here:
    * https://github.com/epoberezkin/ajv
@@ -74,9 +74,9 @@ class Validator {
   /**
    * Initializes validator with schemas in the schemaDir with a given filter function
    * and schemaOptions
-   * @param  {String}   schemaDir, must be an absolute path
-   * @param  {Function} filter
-   * @param  {Object}   schemaOptions
+   * @param {string} schemaDir
+   * @param {Function} filter
+   * @param {Object} schemaOptions
    */
   constructor(schemaDir, filter, schemaOptions = {}) {
     this.schemaDir = schemaDir;
@@ -134,7 +134,12 @@ class Validator {
 
     let list;
     try {
-      list = fs.readdirSync(dir);
+      const stat = fs.statSync(dir);
+      if (stat.isDirectory() === false) {
+        throw new Error('not a directory');
+      }
+
+      list = glob.sync('**', { cwd: dir });
     } catch (err) {
       const error = new io.IOError(`was unable to read ${dir}`, err);
 
@@ -157,8 +162,23 @@ class Validator {
 
     const $ajv = this.$ajv;
     filenames.forEach((filename) => {
-      const schema = JSON.parse(fs.readFileSync(path.resolve(dir, filename)));
-      $ajv.addSchema(schema, schema.id || path.basename(filename, path.extname(filename)));
+      // so that we can use both .json and .js files
+      // and other registered extensions
+      const modulePath = require.resolve(path.resolve(dir, filename));
+
+      // eslint-disable-next-line import/no-dynamic-require
+      const schema = require(modulePath);
+
+      // erase cache for further requires
+      require.cache[modulePath] = undefined;
+
+      const id = schema.$id || schema.id;
+      const defaultName = filename
+        .slice(dir.length + 1)
+        .replace(/\.[^.]+$/, '')
+        .replace(slashes, '.');
+
+      $ajv.addSchema(schema, id || defaultName);
     });
 
     return Promise.resolve();
@@ -253,6 +273,18 @@ class Validator {
    */
   validateSync = (schema, data) => this.$validate(schema, data);
 
+  /**
+   * Sync validation and throws if error is encountered.
+   * @param  {string} schema
+   * @param  {mixed} data
+   */
+  ifError = (schema, data) => {
+    const result = this.$validate(schema, data);
+    if (result.error !== undefined) {
+      debug(JSON.stringify(result, null, 2));
+      throw result.error;
+    }
+  }
 }
 
 module.exports = Validator;

@@ -1,7 +1,6 @@
 # Validation module
 
 [![Build Status](https://semaphoreci.com/api/v1/projects/8895d4a7-aeaa-4453-96e4-32bb4960536e/633151/badge.svg)](https://semaphoreci.com/makeomatic/ms-validation)
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
 
 This is basically a wrapper of [ajv](https://github.com/epoberezkin/ajv) module.
 What it does - is accepts a directory with schemas, reads it in an async or sync fashion based on your preference
