@@ -4,7 +4,7 @@ const { ValidationError } = require('common-errors');
 const { inspectPromise } = require('@makeomatic/deploy');
 
 describe('Validation', function validationSuite() {
-  const Validation = require('../lib');
+  const Validation = require('../src');
   const CORRECT_PATH = path.resolve(__dirname, './fixtures');
   const BAD_PATH = path.resolve(__dirname, './notexistant');
   const EMPTY_PATH = path.resolve(__dirname, './fixtures/empty');

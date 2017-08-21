@@ -9,9 +9,8 @@
   },
   "scripts": {
     "compile": "babel -d ./lib ./src",
-    "pretest": "npm run compile",
     "prepublishOnly": "npm run compile",
-    "test": "npm run lint && mocha",
+    "test": "npm run lint && cross-env NODE_ENV=test nyc mocha",
     "lint": "eslint ./src",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post",
     "commit": "simple-commit-message"
@@ -33,15 +32,19 @@
     "@makeomatic/deploy": "^4.1.4",
     "babel-cli": "^6.26.0",
     "babel-eslint": "^7.2.3",
+    "babel-plugin-istanbul": "^4.1.4",
     "babel-plugin-transform-class-properties": "^6.11.5",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-strict-mode": "^6.11.3",
     "babel-register": "^6.26.0",
-    "eslint": "^4.4.1",
+    "codecov": "^2.3.0",
+    "cross-env": "^5.0.5",
+    "eslint": "^4.5.0",
     "eslint-config-makeomatic": "^1.1.0",
     "eslint-plugin-import": "^2.7.0",
     "eslint-plugin-promise": "^3.5.0",
-    "mocha": "^3.5.0"
+    "mocha": "^3.5.0",
+    "nyc": "^11.1.0"
   },
   "dependencies": {
     "ajv": "^5.2.2",
@@ -71,5 +74,9 @@
       "post-checkout": [],
       "post-merge": []
     }
-  }
+  },
+  "files": [
+    "lib/",
+    "src/"
+  ]
 }

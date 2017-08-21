@@ -178,6 +178,7 @@ class Validator {
         .replace(/\.[^.]+$/, '')
         .replace(slashes, '.');
 
+      debug('adding schema [%s], %s with id choice of $id: [%s] vs defaultName: [%s]', id || defaultName, modulePath, id, defaultName);
       $ajv.addSchema(schema, id || defaultName);
     });
 

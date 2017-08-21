@@ -1,3 +1,2 @@
- --require babel-register
- -R spec
- 
+--require babel-register
+-R spec
