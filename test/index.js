@@ -16,10 +16,18 @@ describe('Validation', function validationSuite() {
 
   it('should successfully init', () => {
     this.validator.init(CORRECT_PATH);
+
+    assert.equal(typeof this.validator.ajv.getSchema('custom'), 'function');
+    assert.equal(typeof this.validator.ajv.getSchema('core-no-id'), 'function');
+    assert.equal(typeof this.validator.ajv.getSchema('nested.no-id'), 'function');
   });
 
   it('should successfully init with a relative path', () => {
     this.validator.init(RELATIVE_PATH);
+
+    assert.equal(typeof this.validator.ajv.getSchema('custom'), 'function');
+    assert.equal(typeof this.validator.ajv.getSchema('core-no-id'), 'function');
+    assert.equal(typeof this.validator.ajv.getSchema('nested.no-id'), 'function');
   });
 
   it('should reject promise with an IO Error on invalid dir', () => (

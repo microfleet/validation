@@ -51,7 +51,7 @@ ValidationError.prototype.toJSON = function toJSON() {
  * @return {Booleam}
  */
 const json = filename => path.extname(filename) === '.json';
-const slashes = new RegExp(path.delimiter, 'g');
+const slashes = new RegExp(path.sep, 'g');
 
 /**
  * @namespace Validator
@@ -173,7 +173,7 @@ class Validator {
       require.cache[modulePath] = undefined;
 
       const id = schema.$id || schema.id;
-      const defaultName = filename
+      const defaultName = modulePath
         .slice(dir.length + 1)
         .replace(/\.[^.]+$/, '')
         .replace(slashes, '.');

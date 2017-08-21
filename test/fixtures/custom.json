@@ -1,5 +1,5 @@
 {
-  "id": "custom",
+  "$id": "custom",
   "type": "object",
   "required": [ "string" ],
   "properties": {
