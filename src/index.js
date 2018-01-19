@@ -12,7 +12,7 @@ const { ValidationError, io, NotFoundError } = require('common-errors');
  * Patch it! We rely on isntanceof Error when serializing and deserializing errors and
  * this breaks it
  */
-const hasOwnProperty = Object.prototype.hasOwnProperty;
+const { hasOwnProperty } = Object.prototype;
 const invokeToJSON = error => error.toJSON();
 ValidationError.prototype.toJSON = function toJSON() {
   return Object.create(Object.prototype, {
@@ -114,7 +114,7 @@ class Validator {
 
     if (!path.isAbsolute(dir)) {
       const stack = callsite();
-      const length = stack.length;
+      const { length } = stack;
 
       // filter out the file itself
       let iterator = 0;
@@ -160,7 +160,7 @@ class Validator {
       throw error;
     }
 
-    const $ajv = this.$ajv;
+    const { $ajv } = this;
     filenames.forEach((filename) => {
       // so that we can use both .json and .js files
       // and other registered extensions

@@ -4,16 +4,15 @@
   "version": "0.0.0-development",
   "main": "./lib/index.js",
   "engines": {
-    "node": ">= 6.2.2",
+    "node": ">= 8.9.0",
     "npm": ">= 4.x.x"
   },
   "scripts": {
     "compile": "babel -d ./lib ./src",
-    "prepublishOnly": "npm run compile",
-    "test": "npm run lint && cross-env NODE_ENV=test nyc mocha",
+    "prepublishOnly": "yarn compile",
+    "test": "yarn lint && cross-env NODE_ENV=test nyc mocha",
     "lint": "eslint ./src",
-    "semantic-release": "semantic-release pre && npm publish && semantic-release post",
-    "commit": "simple-commit-message"
+    "semantic-release": "semantic-release"
   },
   "repository": {
     "type": "git",
@@ -29,51 +28,34 @@
   },
   "homepage": "https://github.com/makeomatic/ms-validation#readme",
   "devDependencies": {
-    "@makeomatic/deploy": "^4.1.4",
+    "@makeomatic/deploy": "^5.0.2",
     "babel-cli": "^6.26.0",
-    "babel-eslint": "^7.2.3",
-    "babel-plugin-istanbul": "^4.1.4",
+    "babel-eslint": "^8.2.1",
+    "babel-plugin-istanbul": "^4.1.5",
     "babel-plugin-transform-class-properties": "^6.11.5",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-plugin-transform-strict-mode": "^6.11.3",
     "babel-register": "^6.26.0",
-    "codecov": "^2.3.0",
-    "cross-env": "^5.0.5",
-    "eslint": "^4.5.0",
-    "eslint-config-makeomatic": "^1.1.0",
-    "eslint-plugin-import": "^2.7.0",
-    "eslint-plugin-promise": "^3.5.0",
-    "mocha": "^3.5.0",
-    "nyc": "^11.1.0"
+    "codecov": "^3.0.0",
+    "cross-env": "^5.1.3",
+    "eslint": "^4.15.0",
+    "eslint-config-makeomatic": "^2.0.1",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-promise": "^3.6.0",
+    "mocha": "^5.0.0",
+    "nyc": "^11.4.1"
   },
   "dependencies": {
-    "ajv": "^5.2.2",
-    "ajv-keywords": "^2.1.0",
-    "bluebird": "^3.4.1",
+    "ajv": "^6.0.1",
+    "ajv-keywords": "^3.0.0",
+    "bluebird": "^3.5.1",
     "callsite": "^1.0.0",
-    "common-errors": "^1.0.4",
-    "debug": "^3.0.0",
+    "common-errors": "^1.0.5",
+    "debug": "^3.1.0",
     "glob": "^7.1.2"
   },
   "peerDependencies": {
     "common-errors": "~1.x.x"
-  },
-  "release": {
-    "verifyConditions": "@makeomatic/condition-semaphore",
-    "analyzeCommits": "simple-commit-message",
-    "generateNotes": "github-post-release",
-    "getLastRelease": "@makeomatic/last-release-npm",
-    "branch": "master"
-  },
-  "config": {
-    "pre-git": {
-      "commit-msg": "simple",
-      "pre-commit": [],
-      "pre-push": [],
-      "post-commit": [],
-      "post-checkout": [],
-      "post-merge": []
-    }
   },
   "files": [
     "lib/",
