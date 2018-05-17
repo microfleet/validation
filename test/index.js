@@ -10,28 +10,30 @@ describe('Validation', function validationSuite() {
   const EMPTY_PATH = path.resolve(__dirname, './fixtures/empty');
   const RELATIVE_PATH = './fixtures';
 
+  let validator;
+
   beforeEach(() => {
-    this.validator = new Validation();
+    validator = new Validation();
   });
 
   it('should successfully init', () => {
-    this.validator.init(CORRECT_PATH);
+    validator.init(CORRECT_PATH);
 
-    assert.equal(typeof this.validator.ajv.getSchema('custom'), 'function');
-    assert.equal(typeof this.validator.ajv.getSchema('core-no-id'), 'function');
-    assert.equal(typeof this.validator.ajv.getSchema('nested.no-id'), 'function');
+    assert.equal(typeof validator.ajv.getSchema('custom'), 'function');
+    assert.equal(typeof validator.ajv.getSchema('core-no-id'), 'function');
+    assert.equal(typeof validator.ajv.getSchema('nested.no-id'), 'function');
   });
 
   it('should successfully init with a relative path', () => {
-    this.validator.init(RELATIVE_PATH);
+    validator.init(RELATIVE_PATH);
 
-    assert.equal(typeof this.validator.ajv.getSchema('custom'), 'function');
-    assert.equal(typeof this.validator.ajv.getSchema('core-no-id'), 'function');
-    assert.equal(typeof this.validator.ajv.getSchema('nested.no-id'), 'function');
+    assert.equal(typeof validator.ajv.getSchema('custom'), 'function');
+    assert.equal(typeof validator.ajv.getSchema('core-no-id'), 'function');
+    assert.equal(typeof validator.ajv.getSchema('nested.no-id'), 'function');
   });
 
   it('should reject promise with an IO Error on invalid dir', () => (
-    this.validator.init(BAD_PATH, true)
+    validator.init(BAD_PATH, true)
       .reflect()
       .then(inspectPromise(false))
       .then((result) => {
@@ -41,7 +43,7 @@ describe('Validation', function validationSuite() {
   ));
 
   it('should reject promise with a file not found error on an empty dir', () => (
-    this.validator.init(EMPTY_PATH, true)
+    validator.init(EMPTY_PATH, true)
       .reflect()
       .then(inspectPromise(false))
       .then((result) => {
@@ -51,8 +53,8 @@ describe('Validation', function validationSuite() {
   ));
 
   it('should reject promise with a NotFoundError on a non-existant validator', () => {
-    this.validator.init(CORRECT_PATH);
-    return this.validator.validate('bad-route', {})
+    validator.init(CORRECT_PATH);
+    return validator.validate('bad-route', {})
       .reflect()
       .then(inspectPromise(false))
       .then((result) => {
@@ -62,8 +64,8 @@ describe('Validation', function validationSuite() {
   });
 
   it('should validate a correct object', () => {
-    this.validator.init(CORRECT_PATH);
-    return this.validator
+    validator.init(CORRECT_PATH);
+    return validator
       .validate('custom', { string: 'not empty' })
       .reflect()
       .then(inspectPromise())
@@ -74,8 +76,8 @@ describe('Validation', function validationSuite() {
   });
 
   it('should filter extra properties', () => {
-    this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
-    return this.validator.filter('custom', { string: 'not empty', qq: 'not in schema' })
+    validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
+    return validator.filter('custom', { string: 'not empty', qq: 'not in schema' })
       .reflect()
       .then(inspectPromise())
       .then((result) => {
@@ -85,8 +87,8 @@ describe('Validation', function validationSuite() {
   });
 
   it('should return validation error on an invalid object', () => {
-    this.validator.init(CORRECT_PATH);
-    return this.validator
+    validator.init(CORRECT_PATH);
+    return validator
       .validate('custom', { string: 'not empty', extraneous: true })
       .reflect()
       .then(inspectPromise(false))
@@ -97,7 +99,8 @@ describe('Validation', function validationSuite() {
           name: 'ValidationError',
           message: 'custom validation failed: data should NOT have additional properties',
           code: 417,
-          errors: [{ name: 'ValidationError',
+          errors: [{
+            name: 'ValidationError',
             message: 'should NOT have additional properties',
             code: 400,
             field: '/extraneous',
@@ -109,34 +112,34 @@ describe('Validation', function validationSuite() {
   });
 
   it('should perform sync validation', () => {
-    this.validator.init(CORRECT_PATH);
-    const result = this.validator.validateSync('custom', { string: 'not empty' });
+    validator.init(CORRECT_PATH);
+    const result = validator.validateSync('custom', { string: 'not empty' });
 
     assert.ifError(result.error);
     assert.deepEqual(result.doc, { string: 'not empty' });
   });
 
   it('should filter out extra props on sync validation', () => {
-    this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
-    const result = this.validator.validateSync('custom', { string: 'not empty', extra: true });
+    validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
+    const result = validator.validateSync('custom', { string: 'not empty', extra: true });
     // ajv does not throw errors in this case
     assert.ifError(result.error);
     assert.deepEqual(result.doc, { string: 'not empty' });
   });
 
   it('throws when using ifError', () => {
-    this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
+    validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
 
     assert.throws(() => {
-      this.validator.ifError('custom', { string: 200, extra: true });
+      validator.ifError('custom', { string: 200, extra: true });
     }, ValidationError);
   });
 
   it('doesn\'t throw on ifError', () => {
-    this.validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
+    validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
 
     assert.doesNotThrow(() => {
-      this.validator.ifError('custom', { string: 'not empty', extra: true });
+      validator.ifError('custom', { string: 'not empty', extra: true });
     });
   });
 });
