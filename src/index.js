@@ -6,7 +6,12 @@ const callsite = require('callsite');
 const glob = require('glob');
 const fs = require('fs');
 const debug = require('debug')('ms-validation');
-const { ValidationError, io, NotFoundError } = require('common-errors');
+const {
+  io,
+  ValidationError,
+  NotFoundError,
+  InvalidOperationError,
+} = require('common-errors');
 
 // this is taken from ajv, but removed
 // eslint-disable-next-line max-len
@@ -56,6 +61,16 @@ ValidationError.prototype.toJSON = function toJSON() {
  */
 const json = filename => path.extname(filename) === '.json';
 const slashes = new RegExp(path.sep, 'g');
+
+function safeValidate(validate, doc) {
+  try {
+    validate(doc);
+  } catch (e) {
+    return e;
+  }
+
+  return true;
+}
 
 /**
  * @namespace Validator
@@ -207,14 +222,17 @@ class Validator {
       return { error: new NotFoundError(`validator "${schema}" not found`) };
     }
 
-    validate(data);
+    const isValidationCompleted = safeValidate(validate, data);
+    if (isValidationCompleted !== true) {
+      return { error: new InvalidOperationError('internal validation error', isValidationCompleted), doc: data };
+    }
 
     if (validate.errors) {
       const readable = this.$ajv.errorsText(validate.errors);
 
       let onlyAdditionalProperties = true;
       const error = new ValidationError(`${schema} validation failed: ${readable}`);
-      validate.errors.forEach((err) => {
+      for (const err of validate.errors) {
         if (err.message !== 'should NOT have additional properties') {
           onlyAdditionalProperties = false;
         }
@@ -224,7 +242,7 @@ class Validator {
           : err.field;
 
         error.addError(new ValidationError(err.message, 400, field));
-      });
+      }
 
       error.code = onlyAdditionalProperties ? 417 : 400;
 
@@ -251,7 +269,14 @@ class Validator {
    */
   validate = (schema, data) => {
     const output = this.$validate(schema, data);
-    if ('error' in output) {
+
+    if (hasOwnProperty.call(output, 'error') === true) {
+      // so that it can be inspected later
+      Object.defineProperty(output.error, '$orig', {
+        value: output.doc,
+      });
+
+      // reject
       return Promise.reject(output.error);
     }
 
