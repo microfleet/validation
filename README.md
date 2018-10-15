@@ -1,6 +1,6 @@
-# Validation module
+# Microfleet Validation Module
 
-[![Build Status](https://semaphoreci.com/api/v1/projects/8895d4a7-aeaa-4453-96e4-32bb4960536e/633151/badge.svg)](https://semaphoreci.com/makeomatic/ms-validation)
+[![Build Status](https://semaphoreci.com/api/v1/microfleet/validation/branches/master/badge.svg)](https://semaphoreci.com/microfleet/validation)
 
 This is basically a wrapper of [ajv](https://github.com/epoberezkin/ajv) module.
 What it does - is accepts a directory with schemas, reads it in an async or sync fashion based on your preference
@@ -9,11 +9,11 @@ Based on the bluebird promises.
 
 ## Installation
 
-`npm i ms-validation -S`
+`yarn add @microfleet/validation`
 
 ## Usage
 
-```js
+```ts
 // Lets assume that we have a following file structure:
 //
 // .
@@ -22,8 +22,8 @@ Based on the bluebird promises.
 // ./index.js
 //
 
-const Errors = require('common-errors');
-const Validator = require('ms-amqp-validation');
+import Errors = require('common-errors');
+import Validator, { HttpStatusError } from '@microfleet/validation';
 const validator = new Validator('./schemas');
 
 // some logic here
@@ -34,7 +34,7 @@ validator.validate('config', {
   // all good
   // handle doc, which would eq { configuration: 'string' }
 })
-.catch(Errors.ValidationError, (error) => {
+.catch(HttpStatusError, (error) => {
   // handle error here
 });
 
@@ -47,7 +47,7 @@ if (result.error) {
 // ...
 
 // init filter
-validator.intest('./dir', null, true); // all schemas in this dir will filter out additional properties instead of throwing an error
+validator.init('./dir', null, true); // all schemas in this dir will filter out additional properties instead of throwing an error
 
 // catches when we only have 417 errors
 validator.filter('config', { conf: 'string', extra: true })
