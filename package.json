@@ -1,5 +1,5 @@
 {
-  "name": "@microfleet/validate",
+  "name": "@microfleet/validation",
   "description": "ajv-based validation utils for mservice architecture",
   "version": "0.0.0-development",
   "main": "./lib/index.js",
@@ -14,19 +14,19 @@
     "compile": "rimraf lib; tsc -b ./tsconfig.build.json",
     "prepublishOnly": "yarn compile",
     "test": "yarn lint && jest",
-    "lint": "tslint",
+    "lint": "tslint -c tslint.json ./src/**/*.ts",
     "semantic-release": "semantic-release"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/makeomatic/ms-validation.git"
+    "url": "https://github.com/microfleet/validation.git"
   },
   "author": "Vitaly Aminev <v@makeomatic.ca>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/makeomatic/ms-validation/issues"
+    "url": "https://github.com/microfleet/validation/issues"
   },
-  "homepage": "https://github.com/makeomatic/ms-validation#readme",
+  "homepage": "https://github.com/microfleet/validation#readme",
   "devDependencies": {
     "@makeomatic/deploy": "^8.0.1",
     "@types/bluebird": "^3.5.24",
