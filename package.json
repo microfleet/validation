@@ -1,11 +1,14 @@
 {
-  "name": "ms-validation",
+  "name": "@microfleet/validate",
   "description": "ajv-based validation utils for mservice architecture",
   "version": "0.0.0-development",
   "main": "./lib/index.js",
   "engines": {
     "node": ">= 8.9.0",
     "npm": ">= 4.x.x"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "compile": "rimraf lib; tsc -b ./tsconfig.build.json",
@@ -19,9 +22,6 @@
     "url": "https://github.com/makeomatic/ms-validation.git"
   },
   "author": "Vitaly Aminev <v@makeomatic.ca>",
-  "contributors": [
-    "Dmitry Gorbunov <me@tewi.tk> (http://tewi.tk)"
-  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/makeomatic/ms-validation/issues"
