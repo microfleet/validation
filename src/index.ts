@@ -1,68 +1,34 @@
-const Promise = require('bluebird');
-const Ajv = require('ajv');
-const keywords = require('ajv-keywords');
-const path = require('path');
-const callsite = require('callsite');
-const glob = require('glob');
-const fs = require('fs');
-const debug = require('debug')('ms-validation');
-const {
-  io,
-  ValidationError,
-  NotFoundError,
-  InvalidOperationError,
-} = require('common-errors');
+import ajv = require('ajv');
+import keywords = require('ajv-keywords');
+import Promise = require('bluebird');
+import callsite = require('callsite');
+import { InvalidOperationError, io, NotFoundError } from 'common-errors';
+import _debug = require('debug');
+import fs = require('fs');
+import glob = require('glob');
+import path = require('path');
+import { HttpStatusError } from './HttpStatusError';
 
 // this is taken from ajv, but removed
-// eslint-disable-next-line max-len
+// tslint:disable-next-line:max-line-length
 const URLFormat = /^(?:https?:\/\/)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u{00a1}-\u{ffff}0-9]+-?)*[a-z\u{00a1}-\u{ffff}0-9]+)(?:\.(?:[a-z\u{00a1}-\u{ffff}0-9]+-?)*[a-z\u{00a1}-\u{ffff}0-9]+)*(?:\.(?:[a-z\u{00a1}-\u{ffff}]{2,})))(?::\d{2,5})?(?:\/[^\s]*)?$/iu;
+const debug = _debug('ms-validation');
+
+type globFilter = (filename: string) => boolean;
 
 /**
  * Patch it! We rely on isntanceof Error when serializing and deserializing errors and
  * this breaks it
  */
 const { hasOwnProperty } = Object.prototype;
-const invokeToJSON = error => error.toJSON();
-ValidationError.prototype.toJSON = function toJSON() {
-  return Object.create(Object.prototype, {
-    name: {
-      enumerable: true,
-      configurable: true,
-      value: this.name,
-    },
-    super_: {
-      enumerable: false,
-      configurable: false,
-      value: Error,
-    },
-    message: {
-      enumerable: hasOwnProperty.call(this, 'message'),
-      value: this.message,
-    },
-    code: {
-      enumerable: hasOwnProperty.call(this, 'code'),
-      value: this.code,
-    },
-    field: {
-      enumerable: !!this.field,
-      value: this.field,
-    },
-    errors: {
-      enumerable: Array.isArray(this.errors),
-      value: Array.isArray(this.errors) ? this.errors.map(invokeToJSON) : undefined,
-    },
-  });
-};
 
 /**
  * Default filter function
- * @param  {String} filename
- * @return {Booleam}
+ * @param filename
  */
-const json = filename => path.extname(filename) === '.json';
+const json: globFilter = (filename: string) => path.extname(filename) === '.json';
 const slashes = new RegExp(path.sep, 'g');
-
-function safeValidate(validate, doc) {
+const safeValidate = (validate: ajv.ValidateFunction, doc: any) => {
   try {
     validate(doc);
   } catch (e) {
@@ -70,54 +36,124 @@ function safeValidate(validate, doc) {
   }
 
   return true;
-}
+};
 
 /**
  * @namespace Validator
  */
-class Validator {
+export class Validator {
   /**
    * Read more about options here:
    * https://github.com/epoberezkin/ajv
-   * @type {Object}
    */
-  static defaultOptions = {
-    allErrors: true,
-    verbose: true,
-    removeAdditional: false,
-    v5: true,
-    useDefaults: true,
+  public static readonly defaultOptions: ajv.Options = {
     $data: true,
+    allErrors: true,
+    removeAdditional: false,
+    useDefaults: true,
+    verbose: true,
   };
+
+  private readonly schemaDir: string | undefined;
+  private readonly $ajv: ajv.Ajv;
+  private readonly filterOpt: globFilter;
+  private readonly schemaOptions: ajv.Options;
 
   /**
    * Initializes validator with schemas in the schemaDir with a given filter function
    * and schemaOptions
-   * @param {string} schemaDir
-   * @param {Function} filter
-   * @param {Object} schemaOptions
+   * @param schemaDir
+   * @param filter
+   * @param schemaOptions
    */
-  constructor(schemaDir, filter, schemaOptions = {}) {
+  constructor(schemaDir?: string, filter?: globFilter | null, schemaOptions: ajv.Options = {}) {
     this.schemaDir = schemaDir;
     this.schemaOptions = { ...Validator.defaultOptions, ...schemaOptions };
     this.filterOpt = filter || json;
-    this.validators = {};
 
     // init
-    const ajv = new Ajv(this.schemaOptions);
+    const ajvInstance = new ajv(this.schemaOptions);
 
     // removes ftp protocol and sanitizes internal networks
-    ajv.addFormat('http-url', URLFormat);
+    ajvInstance.addFormat('http-url', URLFormat);
 
     // enable extra keywords
-    keywords(ajv);
+    keywords(ajvInstance);
 
     // save instance
-    this.$ajv = ajv;
+    this.$ajv = ajvInstance;
 
     // automatically init if we have schema dir
     if (schemaDir) {
       this.init();
+    }
+  }
+
+  /**
+   * In case you need raw validator instance, e.g. to add more schemas later
+   */
+  public get ajv(): ajv.Ajv {
+    return this.$ajv;
+  }
+
+  /**
+   * Validates data via a `schema`, which equals to schema name in the
+   * passed dir
+   * @param  schema
+   * @param  data
+   */
+  public validate = (schema: string, data: any) => {
+    const output = this.$validate(schema, data);
+
+    if (hasOwnProperty.call(output, 'error') === true) {
+      // so that it can be inspected later
+      Object.defineProperty(output.error, '$orig', {
+        value: output.doc,
+      });
+
+      // reject
+      return Promise.reject(output.error);
+    }
+
+    return Promise.resolve(output.doc);
+  }
+
+  /**
+   * Make use of { filter: true } option and catch 417 errors
+   * @param  schema
+   * @param  data
+   * @return
+   */
+  public filter = (schema: string, data: any) => {
+    const output = this.$validate(schema, data);
+    if (hasOwnProperty.call(output, 'error') && (output.error as HttpStatusError).statusCode !== 417) {
+      return Promise.reject(output.error);
+    }
+
+    return Promise.resolve(output.doc);
+  }
+
+  /**
+   * Synchronously validates and returns either an Error object or `void 0`
+   * @param  schema
+   * @param  data
+   */
+  public validateSync = (schema: string, data: any) => (
+    this.$validate(schema, data)
+  )
+
+  /**
+   * Sync validation and throws if error is encountered.
+   * @param  {string} schema
+   * @param  {mixed} data
+   */
+  public ifError = (schema: string, data: any) => {
+    const result = this.$validate(schema, data);
+    if (result.error !== undefined) {
+      if (debug.enabled) {
+        debug(JSON.stringify(result, null, 2));
+      }
+      throw result.error;
     }
   }
 
@@ -128,19 +164,21 @@ class Validator {
    * Can call multiple times to load multiple dirs, though one must make sure
    * that files are named differently, otherwise validators will be overwritten
    *
-   * @param  {String}  _dir - optional, path must be absolute
-   * @return {Promise}
+   * @param dir - path, eventually resolves to absolute
+   * @return
    */
-  init(_dir, isAsync = false) {
-    let dir = _dir || this.schemaDir;
+  public init(dir: string | undefined = this.schemaDir, isAsync: boolean = false) {
+    if (typeof dir === 'undefined') {
+      throw new TypeError('"dir" or this.schemaDir must be defined');
+    }
 
     if (!path.isAbsolute(dir)) {
       const stack = callsite();
       const { length } = stack;
 
       // filter out the file itself
-      let iterator = 0;
-      let source;
+      let iterator: number = 0;
+      let source: string = '';
 
       while (iterator < length && !source) {
         const call = stack[iterator];
@@ -183,7 +221,7 @@ class Validator {
     }
 
     const { $ajv } = this;
-    filenames.forEach((filename) => {
+    for (const filename of filenames) {
       // so that we can use both .json and .js files
       // and other registered extensions
       const modulePath = require.resolve(path.resolve(dir, filename));
@@ -200,22 +238,33 @@ class Validator {
         .replace(/\.[^.]+$/, '')
         .replace(slashes, '.');
 
-      debug('adding schema [%s], %s with id choice of $id: [%s] vs defaultName: [%s]', id || defaultName, modulePath, id, defaultName);
-      $ajv.addSchema(schema, id || defaultName);
-    });
+      debug(
+        'adding schema [%s], %s with id choice of $id: [%s] vs defaultName: [%s]',
+        id || defaultName,
+        modulePath,
+        id,
+        defaultName,
+      );
 
-    return Promise.resolve();
+      $ajv.addSchema(schema, id || defaultName);
+    }
+
+    if (isAsync) {
+      return Promise.resolve();
+    }
+
+    return undefined;
   }
 
   /**
    * @private
    *
    * Internal validation function
-   * @param  {String} schema - schema name
-   * @param  {Mixed}  data
-   * @return {Error|Undefined}
+   * @param  schema - schema name
+   * @param  data
+   * @return
    */
-  $validate(schema, data) {
+  private $validate(schema: string, data: any) {
     const validate = this.$ajv.getSchema(schema);
 
     if (!validate) {
@@ -231,93 +280,29 @@ class Validator {
       const readable = this.$ajv.errorsText(validate.errors);
 
       let onlyAdditionalProperties = true;
-      const error = new ValidationError(`${schema} validation failed: ${readable}`);
+      const error = new HttpStatusError(400, `${schema} validation failed: ${readable}`);
       for (const err of validate.errors) {
         if (err.message !== 'should NOT have additional properties') {
           onlyAdditionalProperties = false;
         }
 
         const field = err.keyword === 'additionalProperties'
-          ? `${err.dataPath}/${err.params.additionalProperty}`
-          : err.field;
+          ? `${err.dataPath}/${(err.params as ajv.AdditionalPropertiesParams).additionalProperty}`
+          : err.dataPath;
 
-        error.addError(new ValidationError(err.message, 400, field));
+        error.addError(new HttpStatusError(400, err.message, field));
       }
 
-      error.code = onlyAdditionalProperties ? 417 : 400;
+      if (onlyAdditionalProperties === true) {
+        error.statusCode = error.status = error.status_code = 417;
+      }
 
       return { error, doc: data };
     }
 
     return { doc: data };
   }
-
-  /**
-   * In case you need raw validator instance, e.g. to add more schemas later
-   * @return {Object} Ajv instance
-   */
-  get ajv() {
-    return this.$ajv;
-  }
-
-  /**
-   * Validates data via a `schema`, which equals to schema name in the
-   * passed dir
-   * @param  {String} schema
-   * @param  {Mixed}  data
-   * @return {Promise}
-   */
-  validate = (schema, data) => {
-    const output = this.$validate(schema, data);
-
-    if (hasOwnProperty.call(output, 'error') === true) {
-      // so that it can be inspected later
-      Object.defineProperty(output.error, '$orig', {
-        value: output.doc,
-      });
-
-      // reject
-      return Promise.reject(output.error);
-    }
-
-    return Promise.resolve(output.doc);
-  };
-
-  /**
-   * Make use of { filter: true } option and catch 417 errors
-   * @param  {String} schema
-   * @param  {Object} data
-   * @return {Promise}
-   */
-  filter = (schema, data) => {
-    const output = this.$validate(schema, data);
-    if (hasOwnProperty.call(output, 'error') && output.error.code !== 417) {
-      return Promise.reject(output.error);
-    }
-
-    return Promise.resolve(output.doc);
-  };
-
-  /**
-   * Synchronously validates and returns either an Error object or `void 0`
-   * @param  {String} schema
-   * @param  {Mixed}  data
-   * @return {Error|Undefined}
-   */
-  validateSync = (schema, data) => this.$validate(schema, data);
-
-  /**
-   * Sync validation and throws if error is encountered.
-   * @param  {string} schema
-   * @param  {mixed} data
-   */
-  ifError = (schema, data) => {
-    const result = this.$validate(schema, data);
-    if (result.error !== undefined) {
-      debug(JSON.stringify(result, null, 2));
-      throw result.error;
-    }
-  }
 }
 
-module.exports = Validator;
+export { HttpStatusError };
+export default Validator;

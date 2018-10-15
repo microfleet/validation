@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es6",
+    "declaration": true,
+    "alwaysStrict": true,
+    "sourceMap": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "allowSyntheticDefaultImports": true
+  },
+  "exclude": [
+    "**/node_modules/**",
+    "lib",
+    "dist",
+    "*.test.ts"
+  ]
+}

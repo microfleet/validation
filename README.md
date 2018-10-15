@@ -47,7 +47,7 @@ if (result.error) {
 // ...
 
 // init filter
-validator.init('./dir', null, true); // all schemas in this dir will filter out additional properties instead of throwing an error
+validator.intest('./dir', null, true); // all schemas in this dir will filter out additional properties instead of throwing an error
 
 // catches when we only have 417 errors
 validator.filter('config', { conf: 'string', extra: true })
