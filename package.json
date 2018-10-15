@@ -13,7 +13,7 @@
   "scripts": {
     "compile": "rimraf lib; tsc -b ./tsconfig.build.json",
     "prepublishOnly": "yarn compile",
-    "test": "yarn lint && jest",
+    "test": "yarn lint && jest --collectCoverage && codecov >/dev/null",
     "lint": "tslint -c tslint.json ./src/**/*.ts",
     "semantic-release": "semantic-release"
   },
