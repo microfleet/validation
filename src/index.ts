@@ -155,6 +155,8 @@ export class Validator {
       }
       throw result.error;
     }
+
+    return result.doc;
   }
 
   /**

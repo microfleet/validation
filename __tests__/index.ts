@@ -111,5 +111,7 @@ test('throws when using ifError', () => {
 
 test('doesn\'t throw on ifError', () => {
   validator = new Validation(CORRECT_PATH, null, { removeAdditional: true });
-  expect(validator.ifError('custom', { string: 'not empty', extra: true })).toBeUndefined();
+  expect(validator.ifError('custom', { string: 'not empty', extra: true })).toEqual({
+    string: 'not empty',
+  });
 });
