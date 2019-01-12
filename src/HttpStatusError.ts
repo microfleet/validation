@@ -3,7 +3,6 @@ import { HttpStatusError as HttpCoreError } from 'common-errors';
 export class HttpStatusError extends HttpCoreError {
   public errors?: Error[];
   public field?: string;
-  public statusCode?: number;
   public status?: number;
   public status_code?: number; // tslint:disable-line:variable-name
 
