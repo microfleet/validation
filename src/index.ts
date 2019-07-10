@@ -149,7 +149,8 @@ export class Validator {
    */
   public ifError = (schema: string, data: any) => {
     const result = this.$validate(schema, data);
-    if (result.error !== undefined) {
+
+    if (typeof result.error !== 'undefined') {
       if (debug.enabled) {
         debug(JSON.stringify(result, null, 2));
       }
