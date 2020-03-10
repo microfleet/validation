@@ -1,42 +1,38 @@
+import { URL } from 'url'
 import ajv = require('ajv');
 import keywords = require('ajv-keywords');
-import Promise = require('bluebird');
 import callsite = require('callsite');
-import { InvalidOperationError, io, NotFoundError } from 'common-errors';
+import { InvalidOperationError, io, NotFoundError } from 'common-errors'
 import _debug = require('debug');
 import fs = require('fs');
+import { promises as fsAsync } from 'fs'
 import glob = require('glob');
 import path = require('path');
-import { HttpStatusError } from './HttpStatusError';
+import { HttpStatusError } from './HttpStatusError'
 
-// this is taken from ajv, but removed
-// tslint:disable-next-line:max-line-length
-const URLFormat = /^(?:https?:\/\/)(?:\S+(?::\S*)?@)?(?:(?!10(?:\.\d{1,3}){3})(?!127(?:\.\d{1,3}){3})(?!169\.254(?:\.\d{1,3}){2})(?!192\.168(?:\.\d{1,3}){2})(?!172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2})(?:[1-9]\d?|1\d\d|2[01]\d|22[0-3])(?:\.(?:1?\d{1,2}|2[0-4]\d|25[0-5])){2}(?:\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-4]))|(?:(?:[a-z\u{00a1}-\u{ffff}0-9]+-?)*[a-z\u{00a1}-\u{ffff}0-9]+)(?:\.(?:[a-z\u{00a1}-\u{ffff}0-9]+-?)*[a-z\u{00a1}-\u{ffff}0-9]+)*(?:\.(?:[a-z\u{00a1}-\u{ffff}]{2,})))(?::\d{2,5})?(?:\/[^\s]*)?$/iu;
-const debug = _debug('ms-validation');
+const debug = _debug('ms-validation')
 
-type globFilter = (filename: string) => boolean;
-
-/**
- * Patch it! We rely on isntanceof Error when serializing and deserializing errors and
- * this breaks it
- */
-const { hasOwnProperty } = Object.prototype;
+export type globFilter = (filename: string) => boolean;
+export type ValidationError = InvalidOperationError | NotFoundError | HttpStatusError
+export type ValidationResponse<T> =
+  { error: null; doc: T } |
+  { error: ValidationError; doc: unknown }
 
 /**
  * Default filter function
  * @param filename
  */
-const json: globFilter = (filename: string) => path.extname(filename) === '.json';
-const slashes = new RegExp(path.sep, 'g');
-const safeValidate = (validate: ajv.ValidateFunction, doc: any) => {
+const json: globFilter = (filename: string) => path.extname(filename) === '.json'
+const slashes = new RegExp(path.sep, 'g')
+const safeValidate = (validate: ajv.ValidateFunction, doc: unknown): boolean | Error => {
   try {
-    validate(doc);
+    validate(doc)
   } catch (e) {
-    return e;
+    return e as Error
   }
 
-  return true;
-};
+  return true
+}
 
 /**
  * @namespace Validator
@@ -67,25 +63,36 @@ export class Validator {
    * @param schemaOptions
    */
   constructor(schemaDir?: string, filter?: globFilter | null, schemaOptions: ajv.Options = {}) {
-    this.schemaDir = schemaDir;
-    this.schemaOptions = { ...Validator.defaultOptions, ...schemaOptions };
-    this.filterOpt = filter || json;
+    this.schemaDir = schemaDir
+    this.schemaOptions = { ...Validator.defaultOptions, ...schemaOptions }
+    this.filterOpt = filter || json
 
     // init
-    const ajvInstance = new ajv(this.schemaOptions);
+    const ajvInstance = new ajv(this.schemaOptions)
 
     // removes ftp protocol and sanitizes internal networks
-    ajvInstance.addFormat('http-url', URLFormat);
+    ajvInstance.addFormat('http-url', (data: string): boolean => {
+      try {
+        const url = new URL(data)
+        return (
+          (url.protocol === 'http:' || url.protocol === 'https:') &&
+          (url.port === '80' || url.port === '443' || url.port === '') &&
+          (url.hash === '')
+        )
+      } catch (_) {
+        return false
+      }
+    })
 
     // enable extra keywords
-    keywords(ajvInstance);
+    keywords(ajvInstance)
 
     // save instance
-    this.$ajv = ajvInstance;
+    this.$ajv = ajvInstance
 
     // automatically init if we have schema dir
     if (schemaDir) {
-      this.init();
+      this.init()
     }
   }
 
@@ -93,7 +100,7 @@ export class Validator {
    * In case you need raw validator instance, e.g. to add more schemas later
    */
   public get ajv(): ajv.Ajv {
-    return this.$ajv;
+    return this.$ajv
   }
 
   /**
@@ -102,20 +109,20 @@ export class Validator {
    * @param  schema
    * @param  data
    */
-  public validate = (schema: string, data: any) => {
-    const output = this.$validate(schema, data);
+  public async validate<T = any>(schema: string, data: unknown): Promise<T> {
+    const output = this.$validate<T>(schema, data)
 
-    if (hasOwnProperty.call(output, 'error') === true) {
+    if (output.error) {
       // so that it can be inspected later
       Object.defineProperty(output.error, '$orig', {
         value: output.doc,
-      });
+      })
 
       // reject
-      return Promise.reject(output.error);
+      throw output.error
     }
 
-    return Promise.resolve(output.doc);
+    return output.doc
   }
 
   /**
@@ -124,13 +131,13 @@ export class Validator {
    * @param  data
    * @return
    */
-  public filter = (schema: string, data: any) => {
-    const output = this.$validate(schema, data);
-    if (hasOwnProperty.call(output, 'error') && (output.error as HttpStatusError).statusCode !== 417) {
-      return Promise.reject(output.error);
+  public async filter<T>(schema: string, data: unknown): Promise<T>{
+    const output = this.$validate(schema, data)
+    if (output.error && (output.error as HttpStatusError).statusCode !== 417) {
+      throw output.error
     }
 
-    return Promise.resolve(output.doc);
+    return output.doc as T
   }
 
   /**
@@ -138,26 +145,27 @@ export class Validator {
    * @param  schema
    * @param  data
    */
-  public validateSync = (schema: string, data: any) => (
-    this.$validate(schema, data)
-  )
+  public validateSync<T = any>(schema: string, data: unknown): ValidationResponse<T> {
+    return this.$validate<T>(schema, data)
+  }
 
   /**
    * Sync validation and throws if error is encountered.
    * @param  {string} schema
    * @param  {mixed} data
    */
-  public ifError = (schema: string, data: any) => {
-    const result = this.$validate(schema, data);
+  public ifError<T = any>(schema: string, data: unknown): T {
+    const result = this.$validate<T>(schema, data)
 
-    if (typeof result.error !== 'undefined') {
+    if (result.error) {
       if (debug.enabled) {
-        debug(JSON.stringify(result, null, 2));
+        debug(JSON.stringify(result, null, 2))
       }
-      throw result.error;
+
+      throw result.error
     }
 
-    return result.doc;
+    return result.doc
   }
 
   /**
@@ -168,78 +176,110 @@ export class Validator {
    * that files are named differently, otherwise validators will be overwritten
    *
    * @param dir - path, eventually resolves to absolute
-   * @return
+   * @param isAsync - asynchronously traverses the disk
    */
-  public init(dir: string | undefined = this.schemaDir, isAsync: boolean = false) {
+  public init(dir: string | undefined = this.schemaDir, isAsync = false): Promise<void> | void {
     if (typeof dir === 'undefined') {
-      throw new TypeError('"dir" or this.schemaDir must be defined');
+      throw new TypeError('"dir" or this.schemaDir must be defined')
     }
 
     if (!path.isAbsolute(dir)) {
-      const stack = callsite();
-      const { length } = stack;
+      const stack = callsite()
+      const { length } = stack
 
       // filter out the file itself
-      let iterator: number = 0;
-      let source: string = '';
+      let iterator = 0
+      let source = ''
 
       while (iterator < length && !source) {
-        const call = stack[iterator];
-        const filename = call.getFileName();
+        const call = stack[iterator]
+        const filename = call.getFileName()
         if (filename !== __filename) {
-          source = path.dirname(filename);
+          source = path.dirname(filename)
         }
-        iterator += 1;
+        iterator += 1
       }
 
-      dir = path.resolve(source, dir);
+      dir = path.resolve(source, dir)
     }
 
-    let list;
+    if (isAsync) {
+      return this.initAsync(dir)
+    }
+
+    const list = this.walkDir(dir)
+    const filteredFiles = this.filterSchemas(dir, list)
+    this.readSchemas(dir, filteredFiles)
+  }
+
+  private async initAsync(dir: string): Promise<void> {
+    const list = await this.walkDirAsync(dir)
+    const filteredFiles = this.filterSchemas(dir, list)
+    this.readSchemas(dir, filteredFiles)
+  }
+
+  private async walkDirAsync(dir: string): Promise<string[]> {
     try {
-      const stat = fs.statSync(dir);
+      const stat = await fsAsync.stat(dir)
       if (stat.isDirectory() === false) {
-        throw new Error('not a directory');
+        throw new io.IOError(`"${dir}" is not a directory`)
       }
 
-      list = glob.sync('**', { cwd: dir });
+      return await new Promise((resolve, reject) => {
+        glob('**', { cwd: dir }, (err, matches) => {
+          if (err) return reject(err)
+          resolve(matches)
+        })
+      })
     } catch (err) {
-      const error = new io.IOError(`was unable to read ${dir}`, err);
+      const error = new io.IOError(`was unable to read ${dir}`, err)
+      throw error
+    }
+  }
 
-      if (isAsync) {
-        return Promise.reject(error);
+  private walkDir(dir: string): string[] {
+    try {
+      const stat = fs.statSync(dir)
+      if (stat.isDirectory() === false) {
+        throw new io.IOError(`"${dir}" is not a directory`)
       }
 
-      throw error;
+      return glob.sync('**', { cwd: dir })
+    } catch (err) {
+      const error = new io.IOError(`was unable to read ${dir}`, err)
+      throw error
     }
+  }
 
-    const filenames = list.filter(this.filterOpt);
+  private filterSchemas(dir: string, list: string[]): string[] {
+    const filenames = list.filter(this.filterOpt)
+
     if (filenames.length === 0) {
-      const error = new io.FileNotFoundError(`no schemas found in dir '${dir}'`);
-      if (isAsync) {
-        return Promise.reject(error);
-      }
-
-      throw error;
+      const error = new io.FileNotFoundError(`no schemas found in dir '${dir}'`)
+      throw error
     }
 
-    const { $ajv } = this;
+    return filenames
+  }
+
+  private readSchemas(dir: string, filenames: string[]): void {
+    const { $ajv } = this
     for (const filename of filenames) {
       // so that we can use both .json and .js files
       // and other registered extensions
-      const modulePath = require.resolve(path.resolve(dir, filename));
+      const modulePath = require.resolve(path.resolve(dir, filename))
 
-      // eslint-disable-next-line import/no-dynamic-require
-      const schema = require(modulePath);
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const schema = require(modulePath)
 
       // erase cache for further requires
-      require.cache[modulePath] = undefined;
+      delete require.cache[modulePath]
 
-      const id = schema.$id || schema.id;
+      const id = schema.$id || schema.id
       const defaultName = modulePath
         .slice(dir.length + 1)
         .replace(/\.[^.]+$/, '')
-        .replace(slashes, '.');
+        .replace(slashes, '.')
 
       debug(
         'adding schema [%s], %s with id choice of $id: [%s] vs defaultName: [%s]',
@@ -247,65 +287,62 @@ export class Validator {
         modulePath,
         id,
         defaultName,
-      );
+      )
 
-      $ajv.addSchema(schema, id || defaultName);
+      $ajv.addSchema(schema, id || defaultName)
     }
-
-    if (isAsync) {
-      return Promise.resolve();
-    }
-
-    return undefined;
   }
 
   /**
-   * @private
    *
    * Internal validation function
    * @param  schema - schema name
    * @param  data
-   * @return
    */
-  private $validate(schema: string, data: any) {
-    const validate = this.$ajv.getSchema(schema);
+  private $validate<T extends unknown = unknown>(schema: string, data: unknown): ValidationResponse<T> {
+    const validate = this.$ajv.getSchema(schema)
 
     if (!validate) {
-      return { error: new NotFoundError(`validator "${schema}" not found`) };
+      return { error: new NotFoundError(`validator "${schema}" not found`), doc: data }
     }
 
-    const isValidationCompleted = safeValidate(validate, data);
+    const isValidationCompleted = safeValidate(validate, data)
     if (isValidationCompleted !== true) {
-      return { error: new InvalidOperationError('internal validation error', isValidationCompleted), doc: data };
+      return {
+        error: new InvalidOperationError('internal validation error', isValidationCompleted as Error),
+        doc: data
+      }
     }
 
     if (validate.errors) {
-      const readable = this.$ajv.errorsText(validate.errors);
+      const readable = this.$ajv.errorsText(validate.errors)
 
-      let onlyAdditionalProperties = true;
-      const error = new HttpStatusError(400, `${schema} validation failed: ${readable}`);
+      let onlyAdditionalProperties = true
+      const error = new HttpStatusError(400, `${schema} validation failed: ${readable}`)
       for (const err of validate.errors) {
-        if (err.message !== 'should NOT have additional properties') {
-          onlyAdditionalProperties = false;
+        let field
+        if (err.keyword !== 'additionalProperties') {
+          onlyAdditionalProperties = false
+          field = err.dataPath
+        } else {
+          field = `${err.dataPath}/${(err.params as ajv.AdditionalPropertiesParams).additionalProperty}`
         }
 
-        const field = err.keyword === 'additionalProperties'
-          ? `${err.dataPath}/${(err.params as ajv.AdditionalPropertiesParams).additionalProperty}`
-          : err.dataPath;
-
-        error.addError(new HttpStatusError(400, err.message, field));
+        error.addError(new HttpStatusError(400, err.message, field))
       }
 
       if (onlyAdditionalProperties === true) {
-        error.statusCode = error.status = error.status_code = 417;
+        // eslint-disable-next-line @typescript-eslint/camelcase
+        error.statusCode = error.status = error.status_code = 417
+        return { error, doc: data as T }
       }
 
-      return { error, doc: data };
+      return { error, doc: data }
     }
 
-    return { doc: data };
+    return { error: null, doc: data as T }
   }
 }
 
-export { HttpStatusError };
-export default Validator;
+export { HttpStatusError }
+export default Validator

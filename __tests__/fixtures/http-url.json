@@ -1,0 +1,5 @@
+{
+  "$id": "http-url",
+  "type": "string",
+  "format": "http-url"
+}
