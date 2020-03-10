@@ -8,8 +8,5 @@ module.exports = {
   ],
   transform: {
     '^.+\\.(ts|tsx)$': 'ts-jest'
-  },
-  projects: [
-    "<rootDir>/**/*.test.(ts|tsx)"
-  ]
+  }
 };
