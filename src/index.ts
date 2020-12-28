@@ -1,6 +1,7 @@
 import { URL } from 'url'
 import Ajv, { ValidateFunction, Options } from 'ajv'
-import keywords from 'ajv-keywords'
+import addKeywords from 'ajv-keywords'
+import addFormats from 'ajv-formats'
 import callsite = require('callsite')
 import { InvalidOperationError, io, NotFoundError } from 'common-errors'
 import _debug = require('debug')
@@ -89,8 +90,11 @@ export class Validator {
       }
     })
 
+    addKeywords(ajvInstance)
+    addFormats(ajvInstance)
+
     // save instance
-    this.$ajv = keywords(ajvInstance)
+    this.$ajv = ajvInstance
 
     // automatically init if we have schema dir
     if (schemaDir) {

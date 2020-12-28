@@ -46,6 +46,7 @@
   },
   "dependencies": {
     "ajv": "^7.0.2",
+    "ajv-formats": "^1.5.1",
     "ajv-keywords": "^4.0.0",
     "callsite": "^1.0.0",
     "common-errors": "^1.2.0",
