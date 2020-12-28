@@ -28,7 +28,7 @@
   },
   "homepage": "https://github.com/microfleet/validation#readme",
   "devDependencies": {
-    "@makeomatic/deploy": "^10.3.2",
+    "@makeomatic/deploy": "^10.3.3",
     "@types/callsite": "^1.0.30",
     "@types/common-errors": "^1.0.1",
     "@types/debug": "^4.1.5",
