@@ -1,13 +1,13 @@
 import { URL } from 'url'
-import ajv = require('ajv');
-import keywords = require('ajv-keywords');
-import callsite = require('callsite');
+import Ajv, { ValidateFunction, Options } from 'ajv'
+import keywords from 'ajv-keywords'
+import callsite = require('callsite')
 import { InvalidOperationError, io, NotFoundError } from 'common-errors'
-import _debug = require('debug');
-import fs = require('fs');
+import _debug = require('debug')
+import fs = require('fs')
 import { promises as fsAsync } from 'fs'
-import glob = require('glob');
-import path = require('path');
+import glob = require('glob')
+import path = require('path')
 import { HttpStatusError } from './HttpStatusError'
 
 const debug = _debug('ms-validation')
@@ -24,7 +24,7 @@ export type ValidationResponse<T> =
  */
 const json: globFilter = (filename: string) => path.extname(filename) === '.json'
 const slashes = new RegExp(path.sep, 'g')
-const safeValidate = (validate: ajv.ValidateFunction, doc: unknown): boolean | Error => {
+const safeValidate = (validate: ValidateFunction, doc: unknown): boolean | Error => {
   try {
     validate(doc)
   } catch (e) {
@@ -42,7 +42,7 @@ export class Validator {
    * Read more about options here:
    * https://github.com/epoberezkin/ajv
    */
-  public static readonly defaultOptions: ajv.Options = {
+  public static readonly defaultOptions: Options = {
     $data: true,
     allErrors: true,
     removeAdditional: false,
@@ -51,9 +51,9 @@ export class Validator {
   };
 
   private readonly schemaDir: string | undefined;
-  private readonly $ajv: ajv.Ajv;
+  private readonly $ajv: Ajv;
   private readonly filterOpt: globFilter;
-  private readonly schemaOptions: ajv.Options;
+  private readonly schemaOptions: Options;
 
   /**
    * Initializes validator with schemas in the schemaDir with a given filter function
@@ -62,13 +62,13 @@ export class Validator {
    * @param filter
    * @param schemaOptions
    */
-  constructor(schemaDir?: string, filter?: globFilter | null, schemaOptions: ajv.Options = {}) {
+  constructor(schemaDir?: string, filter?: globFilter | null, schemaOptions: Options = {}) {
     this.schemaDir = schemaDir
     this.schemaOptions = { ...Validator.defaultOptions, ...schemaOptions }
     this.filterOpt = filter || json
 
     // init
-    const ajvInstance = new ajv(this.schemaOptions)
+    const ajvInstance = new Ajv(this.schemaOptions)
 
     // removes ftp protocol and sanitizes internal networks
     ajvInstance.addFormat('http-url', (data: string): boolean => {
@@ -89,11 +89,8 @@ export class Validator {
       }
     })
 
-    // enable extra keywords
-    keywords(ajvInstance)
-
     // save instance
-    this.$ajv = ajvInstance
+    this.$ajv = keywords(ajvInstance)
 
     // automatically init if we have schema dir
     if (schemaDir) {
@@ -104,7 +101,7 @@ export class Validator {
   /**
    * In case you need raw validator instance, e.g. to add more schemas later
    */
-  public get ajv(): ajv.Ajv {
+  public get ajv(): Ajv {
     return this.$ajv
   }
 
@@ -330,14 +327,13 @@ export class Validator {
           onlyAdditionalProperties = false
           field = err.dataPath
         } else {
-          field = `${err.dataPath}/${(err.params as ajv.AdditionalPropertiesParams).additionalProperty}`
+          field = `${err.dataPath}/${(err.params ).additionalProperty}`
         }
 
         error.addError(new HttpStatusError(400, err.message, field))
       }
 
       if (onlyAdditionalProperties === true) {
-        // eslint-disable-next-line @typescript-eslint/camelcase
         error.statusCode = error.status = error.status_code = 417
         return { error, doc: data as T }
       }
