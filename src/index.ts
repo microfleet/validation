@@ -11,7 +11,7 @@ import glob = require('glob')
 import path = require('path')
 import { HttpStatusError } from './HttpStatusError'
 
-const debug = _debug('ms-validation')
+const debug = _debug('@microfleet/validation')
 
 export type globFilter = (filename: string) => boolean;
 export type ValidationError = InvalidOperationError | NotFoundError | HttpStatusError
@@ -25,7 +25,7 @@ export type ValidationResponse<T> =
  */
 const json: globFilter = (filename: string) => path.extname(filename) === '.json'
 const slashes = new RegExp(path.sep, 'g')
-const safeValidate = (validate: ValidateFunction, doc: unknown): boolean | Error => {
+const safeValidate = <T>(validate: ValidateFunction<T>, doc: unknown): boolean | Error => {
   try {
     validate(doc)
   } catch (e) {
@@ -306,7 +306,7 @@ export class Validator {
    * @param  data
    */
   private $validate<T extends unknown = unknown>(schema: string, data: unknown): ValidationResponse<T> {
-    const validate = this.$ajv.getSchema(schema)
+    const validate = this.$ajv.getSchema<T>(schema)
 
     if (!validate) {
       return { error: new NotFoundError(`validator "${schema}" not found`), doc: data }
@@ -329,9 +329,9 @@ export class Validator {
         let field
         if (err.keyword !== 'additionalProperties') {
           onlyAdditionalProperties = false
-          field = err.dataPath
+          field = err.instancePath
         } else {
-          field = `${err.dataPath}/${(err.params ).additionalProperty}`
+          field = `${err.instancePath}/${err.params.additionalProperty}`
         }
 
         error.addError(new HttpStatusError(400, err.message, field))

@@ -113,13 +113,13 @@ test('should return validation error on an invalid object', async () => {
   expect(JSON.parse(JSON.stringify(error))).toEqual({
     errors: [{
       field: '/extraneous',
-      message: 'should NOT have additional properties',
+      message: 'must NOT have additional properties',
       name: 'HttpStatusError',
       status: 400,
       statusCode: 400,
       status_code: 400,
     }],
-    message: 'custom validation failed: data should NOT have additional properties',
+    message: 'custom validation failed: data must NOT have additional properties',
     name: 'HttpStatusError',
     status: 417,
     statusCode: 417,
