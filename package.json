@@ -38,7 +38,7 @@
     "@typescript-eslint/eslint-plugin": "^4.29.1",
     "@typescript-eslint/parser": "^4.29.1",
     "codecov": "^3.8.3",
-    "eslint": "^7.32.0",
+    "eslint": "^8.0.0",
     "eslint-config-makeomatic": "^5.0.4",
     "jest": "^27.0.6",
     "ts-jest": "^27.0.4",
