@@ -170,3 +170,12 @@ test('throws on invalid URL', () => {
   expect(() => validator.ifError<string>('http-url', 'https://'))
     .toThrow(HttpStatusError)
 })
+
+test('should be able to use 2019-09 schema keywords', () => {
+  validator = new Validation(CORRECT_PATH)
+
+  expect(() => validator.ifError<number[]>('2019-09', [1]))
+    .toThrow(HttpStatusError)
+  expect(validator.ifError<number[]>('2019-09', [1, 2]))
+    .toStrictEqual([1, 2])
+})
