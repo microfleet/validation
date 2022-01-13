@@ -14,7 +14,7 @@
     "compile": "rimraf lib; tsc -b ./tsconfig.build.json",
     "prepublishOnly": "yarn compile",
     "test": "yarn lint && jest --collectCoverage --runTestsByPath __tests__/**.spec.ts && codecov >/dev/null",
-    "lint": "eslint --ext .ts -c .eslintrc.js src",
+    "lint": "eslint --ext .ts -c .eslintrc.js src __tests__",
     "semantic-release": "semantic-release"
   },
   "repository": {
