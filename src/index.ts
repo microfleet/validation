@@ -1,7 +1,8 @@
 import { URL } from 'url'
-import Ajv, { ValidateFunction, Options } from 'ajv'
+import Ajv, { ValidateFunction, Options } from 'ajv/dist/2019'
 import addKeywords from 'ajv-keywords'
 import addFormats from 'ajv-formats'
+import draft7MetaSchema from "ajv/dist/refs/json-schema-draft-07.json"
 import callsite = require('callsite')
 import { InvalidOperationError, io, NotFoundError } from 'common-errors'
 import _debug = require('debug')
@@ -9,6 +10,7 @@ import fs = require('fs')
 import { promises as fsAsync } from 'fs'
 import glob = require('glob')
 import path = require('path')
+
 import { HttpStatusError } from './HttpStatusError'
 
 const debug = _debug('@microfleet/validation')
@@ -49,12 +51,12 @@ export class Validator {
     removeAdditional: false,
     useDefaults: true,
     verbose: true,
-  };
+  }
 
-  private readonly schemaDir: string | undefined;
-  private readonly $ajv: Ajv;
-  private readonly filterOpt: globFilter;
-  private readonly schemaOptions: Options;
+  private readonly schemaDir: string | undefined
+  private readonly $ajv: Ajv
+  private readonly filterOpt: globFilter
+  private readonly schemaOptions: Options
 
   /**
    * Initializes validator with schemas in the schemaDir with a given filter function
@@ -89,6 +91,7 @@ export class Validator {
         return false
       }
     })
+    ajvInstance.addMetaSchema(draft7MetaSchema)
 
     addKeywords(ajvInstance)
     addFormats(ajvInstance)
@@ -238,7 +241,7 @@ export class Validator {
         })
       })
     } catch (err) {
-      const error = new io.IOError(`was unable to read ${dir}`, err)
+      const error = new io.IOError(`was unable to read ${dir}`, err as Error)
       throw error
     }
   }
@@ -252,7 +255,7 @@ export class Validator {
 
       return glob.sync('**', { cwd: dir })
     } catch (err) {
-      const error = new io.IOError(`was unable to read ${dir}`, err)
+      const error = new io.IOError(`was unable to read ${dir}`, err as Error)
       throw error
     }
   }
@@ -305,7 +308,7 @@ export class Validator {
    * @param  schema - schema name
    * @param  data
    */
-  private $validate<T extends unknown = unknown>(schema: string, data: unknown): ValidationResponse<T> {
+  private $validate<T = unknown>(schema: string, data: unknown): ValidationResponse<T> {
     const validate = this.$ajv.getSchema<T>(schema)
 
     if (!validate) {

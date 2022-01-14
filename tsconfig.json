@@ -11,7 +11,8 @@
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "resolveJsonModule": true
   },
   "exclude": [
     "**/node_modules/**",
