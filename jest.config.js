@@ -1,12 +1,13 @@
 module.exports = {
-  preset: 'ts-jest',
   testEnvironment: 'node',
+  coverageProvider: 'v8',
+  verbose: true,
   moduleFileExtensions: [
     'ts',
     'tsx',
     'js'
   ],
   transform: {
-    '^.+\\.(ts|tsx)$': 'ts-jest'
+    '^.+\\.(ts|tsx)$': '@swc-node/jest'
   }
 };

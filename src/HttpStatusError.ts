@@ -13,7 +13,7 @@ export class HttpStatusError extends HttpCoreError {
    */
   constructor(statusCode: number, message?: string, field?: string) {
     super(statusCode, message)
-    this.field = field
+    if (field) this.field = field
   }
 
   /**
