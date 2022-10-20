@@ -169,6 +169,16 @@ test('throws on invalid URL', () => {
     .toThrow(HttpStatusError)
   expect(() => validator.ifError<string>('http-url', 'https://'))
     .toThrow(HttpStatusError)
+  expect(() => validator.ifError<string>('http-url', 'http://notld'))
+    .toThrow(HttpStatusError)
+  expect(() => validator.ifError<string>('http-url', 'http://notld:8443'))
+    .toThrow(HttpStatusError)
+  expect(() => validator.ifError<string>('http-url', 'http://notld. :8443'))
+    .toThrow(HttpStatusError)
+  expect(() => validator.ifError<string>('http-url', 'http://notld.'))
+    .toThrow(HttpStatusError)
+  expect(() => validator.ifError<string>('http-url', 'http://notld. '))
+    .toThrow(HttpStatusError)
 })
 
 test('should be able to use 2019-09 schema keywords', () => {
