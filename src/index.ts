@@ -1,15 +1,15 @@
+import fs from 'node:fs'
+import fsAsync from 'node:fs/promises'
+import path from 'node:path'
 import { URL } from 'url'
-import Ajv, { ValidateFunction, Options } from 'ajv/dist/2019'
+import Ajv, { ValidateFunction, Options } from 'ajv/dist/2020'
 import addKeywords from 'ajv-keywords'
 import addFormats from 'ajv-formats'
 import draft7MetaSchema from "ajv/dist/refs/json-schema-draft-07.json"
-import callsite = require('callsite')
+import callsite from 'callsite'
 import { InvalidOperationError, io, NotFoundError } from 'common-errors'
-import _debug = require('debug')
-import fs = require('fs')
-import { promises as fsAsync } from 'fs'
-import glob = require('glob')
-import path = require('path')
+import _debug from 'debug'
+import { glob, globSync } from 'glob'
 
 import { HttpStatusError } from './HttpStatusError'
 
@@ -78,7 +78,7 @@ export class Validator {
       try {
         const url = new URL(data)
         const { hash, protocol, port, hostname } = url
-        const [, tld] = hostname.split('.') 
+        const [, tld] = hostname.split('.')
         return (
           (
             (protocol === 'http:' && (port === '80' || port === '')) ||
@@ -237,12 +237,7 @@ export class Validator {
         throw new io.IOError(`"${dir}" is not a directory`)
       }
 
-      return await new Promise((resolve, reject) => {
-        glob('**', { cwd: dir }, (err, matches) => {
-          if (err) return reject(err)
-          resolve(matches)
-        })
-      })
+      return await glob('**', { cwd: dir })
     } catch (err) {
       const error = new io.IOError(`was unable to read ${dir}`, err as Error)
       throw error
@@ -256,7 +251,7 @@ export class Validator {
         throw new io.IOError(`"${dir}" is not a directory`)
       }
 
-      return glob.sync('**', { cwd: dir })
+      return globSync('**', { cwd: dir })
     } catch (err) {
       const error = new io.IOError(`was unable to read ${dir}`, err as Error)
       throw error
