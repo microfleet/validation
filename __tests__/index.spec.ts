@@ -181,6 +181,12 @@ test('throws on invalid URL', () => {
     .toThrow(HttpStatusError)
 })
 
+test('do not throw on valid URL', () => {
+  validator = new Validation(CORRECT_PATH, null, { removeAdditional: false })
+  expect(validator.ifError<string>('http-url', 'https://super.duper#hash'))
+    .toEqual('https://super.duper#hash')
+})
+
 test('should be able to use 2019-09 schema keywords', () => {
   validator = new Validation(CORRECT_PATH)
 

@@ -77,7 +77,7 @@ export class Validator {
     ajvInstance.addFormat('http-url', (data: string): boolean => {
       try {
         const url = new URL(data)
-        const { hash, protocol, port, hostname } = url
+        const { protocol, port, hostname } = url
         const [, tld] = hostname.split('.')
         return (
           (
@@ -85,8 +85,6 @@ export class Validator {
             (protocol === 'https:' && (port === '443' || port === ''))
           ) &&
           (
-            hash === ''
-          ) && (
             typeof tld === 'string' && tld.trim().length > 0
           )
         )
