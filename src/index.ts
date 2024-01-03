@@ -1,6 +1,6 @@
 import fsAsync from 'node:fs/promises'
 import path from 'node:path'
-import { URL } from 'url'
+import { URL } from 'node:url'
 import Ajv, { ValidateFunction, Options } from 'ajv/dist/2020'
 import addKeywords from 'ajv-keywords'
 import addFormats from 'ajv-formats'
@@ -9,7 +9,6 @@ import callsite from 'callsite'
 import { InvalidOperationError, io, NotFoundError } from 'common-errors'
 import _debug from 'debug'
 import { glob } from 'glob'
-
 import { HttpStatusError } from './HttpStatusError'
 
 const debug = _debug('@microfleet/validation')
@@ -25,7 +24,6 @@ export type ValidationResponse<T> =
  * @param filename
  */
 const json: globFilter = (filename: string) => path.extname(filename) === '.json'
-const slashes = new RegExp(path.sep, 'g')
 const safeValidate = <T>(validate: ValidateFunction<T>, doc: unknown): boolean | Error => {
   try {
     validate(doc)
@@ -255,7 +253,7 @@ export class Validator {
       const defaultName = modulePath
         .slice(dir.length + 1)
         .replace(/\.[^.]+$/, '')
-        .replace(slashes, '.')
+        .replaceAll(path.sep, '.')
 
       debug(
         'adding schema [%s], %s with id choice of $id: [%s] vs defaultName: [%s]',
