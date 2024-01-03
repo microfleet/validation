@@ -34,3 +34,6 @@ lib
 .vscode
 .DS_Store
 
+.tsimp
+.tshy
+.tshy-build

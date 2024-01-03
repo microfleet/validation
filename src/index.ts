@@ -1,7 +1,6 @@
-import fs from 'node:fs'
 import fsAsync from 'node:fs/promises'
 import path from 'node:path'
-import { URL } from 'url'
+import { URL } from 'node:url'
 import Ajv, { ValidateFunction, Options } from 'ajv/dist/2020'
 import addKeywords from 'ajv-keywords'
 import addFormats from 'ajv-formats'
@@ -9,8 +8,7 @@ import draft7MetaSchema from "ajv/dist/refs/json-schema-draft-07.json"
 import callsite from 'callsite'
 import { InvalidOperationError, io, NotFoundError } from 'common-errors'
 import _debug from 'debug'
-import { glob, globSync } from 'glob'
-
+import { glob } from 'glob'
 import { HttpStatusError } from './HttpStatusError'
 
 const debug = _debug('@microfleet/validation')
@@ -26,7 +24,6 @@ export type ValidationResponse<T> =
  * @param filename
  */
 const json: globFilter = (filename: string) => path.extname(filename) === '.json'
-const slashes = new RegExp(path.sep, 'g')
 const safeValidate = <T>(validate: ValidateFunction<T>, doc: unknown): boolean | Error => {
   try {
     validate(doc)
@@ -99,11 +96,6 @@ export class Validator {
 
     // save instance
     this.$ajv = ajvInstance
-
-    // automatically init if we have schema dir
-    if (schemaDir) {
-      this.init()
-    }
   }
 
   /**
@@ -186,9 +178,8 @@ export class Validator {
    * that files are named differently, otherwise validators will be overwritten
    *
    * @param dir - path, eventually resolves to absolute
-   * @param isAsync - asynchronously traverses the disk
    */
-  public init(dir: string | undefined = this.schemaDir, isAsync = false): Promise<void> | void {
+  public async init(dir: string | undefined = this.schemaDir): Promise<void> {
     if (typeof dir === 'undefined') {
       throw new TypeError('"dir" or this.schemaDir must be defined')
     }
@@ -213,19 +204,9 @@ export class Validator {
       dir = path.resolve(source, dir)
     }
 
-    if (isAsync) {
-      return this.initAsync(dir)
-    }
-
-    const list = this.walkDir(dir)
-    const filteredFiles = this.filterSchemas(dir, list)
-    this.readSchemas(dir, filteredFiles)
-  }
-
-  private async initAsync(dir: string): Promise<void> {
     const list = await this.walkDirAsync(dir)
     const filteredFiles = this.filterSchemas(dir, list)
-    this.readSchemas(dir, filteredFiles)
+    await this.readSchemas(dir, filteredFiles)
   }
 
   private async walkDirAsync(dir: string): Promise<string[]> {
@@ -235,21 +216,7 @@ export class Validator {
         throw new io.IOError(`"${dir}" is not a directory`)
       }
 
-      return await glob('**', { cwd: dir })
-    } catch (err) {
-      const error = new io.IOError(`was unable to read ${dir}`, err as Error)
-      throw error
-    }
-  }
-
-  private walkDir(dir: string): string[] {
-    try {
-      const stat = fs.statSync(dir)
-      if (stat.isDirectory() === false) {
-        throw new io.IOError(`"${dir}" is not a directory`)
-      }
-
-      return globSync('**', { cwd: dir })
+      return await glob('**', { cwd: dir, nodir: true })
     } catch (err) {
       const error = new io.IOError(`was unable to read ${dir}`, err as Error)
       throw error
@@ -267,24 +234,26 @@ export class Validator {
     return filenames
   }
 
-  private readSchemas(dir: string, filenames: string[]): void {
+  private async readSchemas(dir: string, filenames: string[]): Promise<void> {
     const { $ajv } = this
     for (const filename of filenames) {
       // so that we can use both .json and .js files
       // and other registered extensions
-      const modulePath = require.resolve(path.resolve(dir, filename))
+      const modulePath = path.resolve(dir, filename)
 
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const schema = require(modulePath)
+      const opts = modulePath.endsWith('.json')
+        ? { with: { type: 'json' } }
+        : {}
 
-      // erase cache for further requires
-      delete require.cache[modulePath]
+      // bust cache
+      const module = await import(`${modulePath}?${Date.now()}`, opts)
+      const schema = module.default || module
 
       const id = schema.$id || schema.id
       const defaultName = modulePath
         .slice(dir.length + 1)
         .replace(/\.[^.]+$/, '')
-        .replace(slashes, '.')
+        .replaceAll(path.sep, '.')
 
       debug(
         'adding schema [%s], %s with id choice of $id: [%s] vs defaultName: [%s]',

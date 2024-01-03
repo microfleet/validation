@@ -9,7 +9,7 @@ Based on the bluebird promises.
 
 ## Installation
 
-`yarn add @microfleet/validation`
+`npm i @microfleet/validation`
 
 ## Usage
 
@@ -25,6 +25,8 @@ Based on the bluebird promises.
 import Errors = require('common-errors');
 import Validator, { HttpStatusError } from '@microfleet/validation';
 const validator = new Validator('./schemas');
+
+await validator.init()
 
 // some logic here
 validator.validate('config', {
