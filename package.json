@@ -61,7 +61,7 @@
     "ajv-keywords": "^5.1.0",
     "callsite": "^1.0.0",
     "debug": "^4.3.4",
-    "glob": "^10.3.10"
+    "glob": "^11.0.0"
   },
   "peerDependencies": {
     "common-errors": "~1.x.x"
